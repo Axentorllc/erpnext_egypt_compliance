@@ -1,0 +1,16 @@
+{{
+"Type": { company. },
+"Id": { company. },
+"Name": { company. },
+"BranchId": { company. },
+"Country": { company. },
+"Governate": { company. },
+"RegionCity": { company. },
+"Street": { company. },
+"BuildingNumber": { company. },
+"PostalCode": { company. },
+"Floor": { company. },
+"Room": { company. },
+"Landmark": { company. },
+"AdditionalInformation": { company. },
+}}

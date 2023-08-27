@@ -1,0 +1,19 @@
+{{
+    "description" : {item.description },
+    "unitType" : {item.uom },
+    "quantity" : {item.qty },
+    "unitValue" : {item.rate },
+    "salesTotal" : {item.amount },
+    // "taxableItems" : {item. }, 
+    // "internalCode" : {item. },
+    "total" : {item.amount },
+    "itemType" : {item.eta_code_type },
+    "itemCode" : {item.eta_item_code },
+    
+    "netTotal" : {item. },
+    "itemsDiscount" : {item. },
+    "discount" : {item. },
+
+    "valueDifference" : {item. },
+    "totalTaxableFees" : {item. },
+}}

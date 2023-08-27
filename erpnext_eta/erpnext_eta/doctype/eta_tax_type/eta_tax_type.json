@@ -1,0 +1,115 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "field:code",
+ "creation": "2022-06-21 18:55:09.687733",
+ "description": "Egyptian Tax Authorities Pre-Defined Tax Types",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "code",
+  "arabic_description",
+  "english_description",
+  "column_break_4",
+  "is_group",
+  "parent_eta_tax_type",
+  "is_non_taxable",
+  "lft",
+  "rgt",
+  "old_parent"
+ ],
+ "fields": [
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "label": "Code",
+   "unique": 1
+  },
+  {
+   "fieldname": "arabic_description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Arabic Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "english_description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "English Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "lft",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Left",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "rgt",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Right",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_group",
+   "fieldtype": "Check",
+   "label": "Is Group"
+  },
+  {
+   "fieldname": "old_parent",
+   "fieldtype": "Link",
+   "label": "Old Parent",
+   "options": "ETA Tax Type"
+  },
+  {
+   "fieldname": "parent_eta_tax_type",
+   "fieldtype": "Link",
+   "label": "Parent ETA Tax Type",
+   "options": "ETA Tax Type"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_non_taxable",
+   "fieldtype": "Check",
+   "label": "Is Non Taxable"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_tree": 1,
+ "links": [],
+ "modified": "2022-06-25 20:01:26.256211",
+ "modified_by": "Administrator",
+ "module": "ERPNext ETA",
+ "name": "ETA Tax Type",
+ "nsm_parent_field": "parent_eta_tax_type",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "arabic_description,english_description",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "arabic_description"
+}

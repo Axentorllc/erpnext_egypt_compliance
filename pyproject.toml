@@ -1,0 +1,27 @@
+[tool.black]
+line-length = 120
+
+[tool.pytest.ini_options]
+addopts = "-p no:warnings -vvs --sites-path=/workspace/development/frappe-bench-14/sites"
+
+[project]
+name = "erpnext_eta"
+version = "0.0.1"
+dependencies = ["pytest_frappe"]
+
+[tool.ruff]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+#    "T201",
+    "T203",
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]

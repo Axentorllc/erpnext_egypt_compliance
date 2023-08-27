@@ -1,0 +1,36 @@
+{{
+    "Version": "1.1",
+    "TranDtls": {{
+        "TaxSch": "{transaction_details.tax_scheme}",
+        "SupTyp": "{transaction_details.supply_type}",
+        "RegRev": "{transaction_details.reverse_charge}",
+        "EcmGstin": "{transaction_details.ecom_gstin}",
+        "IgstOnIntra": "{transaction_details.igst_on_intra}"
+    }},
+    
+"internalId" : { invoice.name },
+"documentType" : { invoice. },
+"documentTypeVersion" : { invoice. },
+"dateTimeIssued" : { invoice. },
+"taxpayerActivityCode" : { invoice. },
+"totalSalesAmount" : { invoice. },
+"totalDiscountAmount" : { invoice. },
+"netAmount" : { invoice. },
+"taxTotals" : { invoice. },
+"extraDiscountAmount" : { invoice. },
+"totalItemsDiscountAmount" : { invoice. },
+"totalAmount" : { invoice. },
+"currencySold" : { invoice. },
+"amountEGP" : { invoice. },
+"amountSold" : { invoice. },
+"currencyExchangeRate" : { invoice. },
+"taxType" : { invoice. },
+"amount" : { invoice. },
+"subType" : { invoice. },
+"rate" : { invoice. },
+
+
+    "ItemList": [
+        {item_list}
+    ]
+}}

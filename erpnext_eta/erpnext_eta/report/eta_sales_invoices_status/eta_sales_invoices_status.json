@@ -1,0 +1,23 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2022-10-25 15:38:21.999868",
+ "disable_prepared_report": 0,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": "HCH Supply Co",
+ "modified": "2022-11-02 14:51:04.078382",
+ "modified_by": "Administrator",
+ "module": "ERPNext ETA",
+ "name": "ETA Sales Invoices Status",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Sales Invoice",
+ "report_name": "ETA Sales Invoices Status",
+ "report_type": "Script Report",
+ "roles": []
+}
