@@ -1,6 +1,6 @@
 from . import __version__ as app_version
 
-app_name = "erpnext_eta"
+app_name = "erpnext_egypt_compliance"
 app_title = "ERPNext ETA"
 app_publisher = "Axentor, LLC"
 app_description = "Integration for Egyptian Tax Authority"
@@ -11,14 +11,14 @@ app_license = "CC"
 
 
 doctype_js = {
-    "Sales Invoice": "erpnext_eta/public/js/sales_invoice.js",
-    "POS Invoice": "erpnext_eta/public/js/pos_invoice.js",
-    "Item": "erpnext_eta/public/js/item.js",
+    "Sales Invoice": "erpnext_egypt_compliance/public/js/sales_invoice.js",
+    "POS Invoice": "erpnext_egypt_compliance/public/js/pos_invoice.js",
+    "Item": "erpnext_egypt_compliance/public/js/item.js",
 }
 
 doc_events = {
     "Sales Invoice": {
-        "before_submit": "erpnext_eta.erpnext_eta.utils.before_submit_validate_eta_invoice",
+        "before_submit": "erpnext_egypt_compliance.erpnext_egypt_compliance.utils.before_submit_validate_eta_invoice",
     },
 }
 
@@ -47,8 +47,8 @@ user_data_fields = [
 
 scheduler_events = {
     "hourly_long": [
-        "erpnext_eta.erpnext_eta.utils.autosubmit_eta_process",
-        "erpnext_eta.erpnext_eta.utils.autofetch_eta_status_process",
+        "erpnext_egypt_compliance.erpnext_egypt_compliance.utils.autosubmit_eta_process",
+        "erpnext_egypt_compliance.erpnext_egypt_compliance.utils.autofetch_eta_status_process",
     ],
 }
 
@@ -57,7 +57,7 @@ scheduler_events = {
 # --------------------------------
 
 # auth_hooks = [
-# 	"erpnext_eta.auth.validate"
+# 	"erpnext_egypt_compliance.auth.validate"
 # ]
 
 

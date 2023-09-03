@@ -2,8 +2,8 @@
 Configuration for docs
 """
 
-# source_link = "https://github.com/[org_name]/erpnext_eta"
-# docs_base_url = "https://[org_name].github.io/erpnext_eta"
+# source_link = "https://github.com/[org_name]/erpnext_egypt_compliance"
+# docs_base_url = "https://[org_name].github.io/erpnext_egypt_compliance"
 # headline = "App that does everything"
 # sub_heading = "Yes, you got that right the first time, everything"
 

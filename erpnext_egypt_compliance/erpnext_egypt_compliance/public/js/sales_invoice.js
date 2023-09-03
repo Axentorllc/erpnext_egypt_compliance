@@ -13,7 +13,7 @@ frappe.ui.form.on('Sales Invoice', {
 	eta_add_download_button(frm) {
 		frm.add_custom_button('Download ETA Json', () => {
 
-			var url = frappe.urllib.get_base_url() + '/api/method/erpnext_eta.erpnext_eta.main.download_eta_inv_json?docname=' + encodeURIComponent(frm.doc.name)
+			var url = frappe.urllib.get_base_url() + '/api/method/erpnext_egypt_compliance.erpnext_egypt_compliance.main.download_eta_inv_json?docname=' + encodeURIComponent(frm.doc.name)
 			$.ajax({
 				url: url,
 				type: 'GET',
@@ -43,7 +43,7 @@ frappe.ui.form.on('Sales Invoice', {
 	},
 	fetch_eta_status(frm) {
 		frappe.call({
-			method: 'erpnext_eta.erpnext_eta.main.fetch_eta_status',
+			method: 'erpnext_egypt_compliance.erpnext_egypt_compliance.main.fetch_eta_status',
 			args: {	docname: frm.doc.name },
 			callback: function(r) {
 				if (r.message) {
@@ -57,7 +57,7 @@ frappe.ui.form.on('Sales Invoice', {
 	eta_add_submit_button(frm) {
 		frm.add_custom_button('Submit to ETA', () => {
 			frappe.call({
-				method: 'erpnext_eta.erpnext_eta.main.submit_eta_invoice',
+				method: 'erpnext_egypt_compliance.erpnext_egypt_compliance.main.submit_eta_invoice',
 				args: {	docname: frm.doc.name },
 				callback: function(r) {
 					if (r.message) {

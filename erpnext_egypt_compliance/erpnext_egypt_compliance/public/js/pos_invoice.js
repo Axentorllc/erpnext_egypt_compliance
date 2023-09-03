@@ -7,7 +7,7 @@ frappe.ui.form.on('POS Invoice', {
   eta_add_download_ereceipt_button(frm) {
     frm.add_custom_button('Download ETA Json', () => {
       frappe.call({
-			method: 'erpnext_eta.erpnext_eta.ereceipt_schema.build_erceipt_json',
+			method: 'erpnext_egypt_compliance.erpnext_egypt_compliance.ereceipt_schema.build_erceipt_json',
 			args: {	docname: frm.doc.name },
 			callback: function(r) {
 				if (r.message) {
