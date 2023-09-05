@@ -2,17 +2,17 @@ import json
 
 import frappe
 
-from erpnext_eta.erpnext_eta.einvoice_schema import get_invoice_asjson
-from erpnext_eta.erpnext_eta.legacy_einvoice import (
+from erpnext_egypt_compliance.erpnext_egypt_compliance.einvoice_schema import get_invoice_asjson
+from erpnext_egypt_compliance.erpnext_egypt_compliance.legacy_einvoice import (
     fetch_eta_status as fetch_eta_status_legacy,
 )
-from erpnext_eta.erpnext_eta.legacy_einvoice import (
+from erpnext_egypt_compliance.erpnext_egypt_compliance.legacy_einvoice import (
     get_eta_invoice as get_eta_invoice_legacy,
 )
-from erpnext_eta.erpnext_eta.legacy_einvoice import (
+from erpnext_egypt_compliance.erpnext_egypt_compliance.legacy_einvoice import (
     submit_eta_invoice as submit_eta_invoice_legacy,
 )
-from erpnext_eta.erpnext_eta.utils import (
+from erpnext_egypt_compliance.erpnext_egypt_compliance.utils import (
     download_eta_invoice_json,
 )
 

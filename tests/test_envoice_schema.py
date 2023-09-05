@@ -2,9 +2,9 @@ import pytest
 
 import frappe
 
-from erpnext_eta.erpnext_eta.utils import eta_round
-import erpnext_eta.erpnext_eta.einvoice_schema as einvoice_schema
-from erpnext_eta.erpnext_eta.einvoice_schema import (
+from erpnext_egypt_compliance.erpnext_egypt_compliance.utils import eta_round
+import erpnext_egypt_compliance.erpnext_egypt_compliance.einvoice_schema as einvoice_schema
+from erpnext_egypt_compliance.erpnext_egypt_compliance.einvoice_schema import (
     _get_item_code_and_type,
     _get_item_unit_value,
     _get_sales_and_net_totals,

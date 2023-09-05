@@ -2,7 +2,7 @@
 # For license information, pleASe see license.txt
 
 import frappe
-from erpnext_eta.erpnext_eta.utils import get_company_eta_connector
+from erpnext_egypt_compliance.erpnext_egypt_compliance.utils import get_company_eta_connector
 from datetime import datetime
 
 

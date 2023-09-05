@@ -7,12 +7,12 @@ from pydantic import BaseModel, validator, Field
 
 import frappe
 
-from erpnext_eta.erpnext_eta.utils import (
+from erpnext_egypt_compliance.erpnext_egypt_compliance.utils import (
     eta_datetime_issued_format,
     validate_allowed_values,
     eta_round,
 )
-from erpnext_eta.erpnext_eta.ereceipt_schema import ItemWiseTaxDetails
+from erpnext_egypt_compliance.erpnext_egypt_compliance.ereceipt_schema import ItemWiseTaxDetails
 
 INVOICE_RAW_DATA = {}
 COMPANY_DATA = {}

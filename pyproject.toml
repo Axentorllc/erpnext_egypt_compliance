@@ -5,7 +5,7 @@ line-length = 120
 addopts = "-p no:warnings -vvs --sites-path=/workspace/development/frappe-bench-14/sites"
 
 [project]
-name = "erpnext_eta"
+name = "erpnext_egypt_compliance"
 version = "0.0.1"
 dependencies = ["pytest_frappe"]
 

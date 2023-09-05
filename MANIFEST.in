@@ -4,15 +4,15 @@ include *.json
 include *.md
 include *.py
 include *.txt
-recursive-include erpnext_eta *.css
-recursive-include erpnext_eta *.csv
-recursive-include erpnext_eta *.html
-recursive-include erpnext_eta *.ico
-recursive-include erpnext_eta *.js
-recursive-include erpnext_eta *.json
-recursive-include erpnext_eta *.md
-recursive-include erpnext_eta *.png
-recursive-include erpnext_eta *.py
-recursive-include erpnext_eta *.svg
-recursive-include erpnext_eta *.txt
-recursive-exclude erpnext_eta *.pyc
+recursive-include erpnext_egypt_compliance *.css
+recursive-include erpnext_egypt_compliance *.csv
+recursive-include erpnext_egypt_compliance *.html
+recursive-include erpnext_egypt_compliance *.ico
+recursive-include erpnext_egypt_compliance *.js
+recursive-include erpnext_egypt_compliance *.json
+recursive-include erpnext_egypt_compliance *.md
+recursive-include erpnext_egypt_compliance *.png
+recursive-include erpnext_egypt_compliance *.py
+recursive-include erpnext_egypt_compliance *.svg
+recursive-include erpnext_egypt_compliance *.txt
+recursive-exclude erpnext_egypt_compliance *.pyc
