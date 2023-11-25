@@ -2,7 +2,7 @@ import frappe
 import json
 from datetime import datetime
 from frappe.utils import add_to_date
-from erpnext_egypt_compliance.erpnext_egypt_compliance.utils import get_company_eta_connector
+from erpnext_egypt_compliance.erpnext_eta.utils import get_company_eta_connector
 import pytz
 
 
