@@ -6,7 +6,7 @@ from frappe.model.document import Document
 import requests
 import json
 from datetime import datetime
-from erpnext_egypt_compliance.erpnext_egypt_compliance.utils import get_eta_invoice, get_eta_inv_datetime_diff
+from erpnext_egypt_compliance.erpnext_eta.legacy_einvoice import get_eta_invoice, get_eta_inv_datetime_diff
 
 
 class ETAConnector(Document):

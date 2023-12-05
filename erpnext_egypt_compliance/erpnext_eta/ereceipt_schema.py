@@ -10,7 +10,7 @@ import frappe.utils
 import pytz
 from pydantic import BaseModel, Field, conint, validator
 
-from erpnext_egypt_compliance.erpnext_egypt_compliance.utils import (
+from erpnext_egypt_compliance.erpnext_eta.utils import (
     eta_datetime_issued_format,
     get_company_eta_connector,
 )
