@@ -4,4 +4,4 @@ Integration for Egyptian Tax Authority
 
 #### License
 
-CC
+GPLv3
