@@ -1,1 +1,1 @@
-License: CC
+License: GPLv3
