@@ -7,7 +7,7 @@ addopts = "-p no:warnings -vvs --sites-path=/workspace/development/frappe-bench-
 [project]
 name = "erpnext_egypt_compliance"
 version = "0.0.1"
-dependencies = ["pytest_frappe"]
+dependencies = ["pytest_frappe", "pydantic"]
 
 [tool.ruff]
 select = [
