@@ -296,7 +296,7 @@ class ItemWiseTaxDetails(BaseModel):
     `__root__` is used to indicate that the model's structure is a simple dictionary with no additional named fields.
     """
 
-    __root__: Dict[str, List[float]]
+    data : Dict[str, List[float]]
 
 
 @frappe.whitelist()
@@ -449,9 +449,9 @@ def _get_taxable_items(_item: dict) -> List[SingleTaxableItems]:
         for tax in POS_INVOICE_RAW_DATA.get("taxes"):
             # TODO: Hardcoded, Type: T1, SubType: V009, amount=_get_tax_amount()
             item_wise_tax_detail_asjson = json.loads(tax.item_wise_tax_detail)
-            items_tax_detail_list = ItemWiseTaxDetails(__root__=item_wise_tax_detail_asjson)
+            items_tax_detail_list = ItemWiseTaxDetails(data=item_wise_tax_detail_asjson)
 
-            item_tax_detail = items_tax_detail_list.__root__.get(_item.get("item_code"))
+            item_tax_detail = items_tax_detail_list.data.get(_item.get("item_code"))
             amount = _get_tax_amount(
                 (item_tax_detail[0] / 100),
                 _item.get("net_rate"),
