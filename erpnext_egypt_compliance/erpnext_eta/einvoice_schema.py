@@ -74,7 +74,7 @@ class InvoiceLine(BaseModel):
 
     @validator("itemType")
     def item_type_must_be_one_of(cls, value, values):
-        allowed_types = ["GS1", "GS2"]
+        allowed_types = ["GS1", "EGS"]
         return validate_allowed_values(value, allowed_types)
 
     @validator("salesTotal", "netTotal")
@@ -345,8 +345,8 @@ def _get_item_taxable_items(_item_data: Dict):
                 continue
 
             item_wise_tax_detail_asjson = json.loads(tax.get("item_wise_tax_detail"))
-            items_tax_detail_list = ItemWiseTaxDetails(__root__=item_wise_tax_detail_asjson)
-            item_tax_detail = items_tax_detail_list.__root__.get(_item_data.get("item_code"))
+            items_tax_detail_list = ItemWiseTaxDetails(data=item_wise_tax_detail_asjson)
+            item_tax_detail = items_tax_detail_list.data.get(_item_data.get("item_code"))
 
             # default values
             tax_type = tax.get("eta_tax_type")
