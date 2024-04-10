@@ -431,7 +431,7 @@ def _get_item_unit_value(_item_data: Dict):
 def _get_item_code_and_type(_item_data: Dict):
     # default item code and type
     _code = _item_data.get("eta_item_code") or frappe.get_value("ETA Settings", "ETA Settings", "eta_item_code")
-    _type = _item_data.get("eta_code_type", "EGS")
+    _type = _item_data.get("eta_code_type", "GS1")
 
     if _item_data.get("eta_inherit_brand"):
         _code = frappe.get_value("Brand", _item_data.get("brand"), "eta_item_code")
