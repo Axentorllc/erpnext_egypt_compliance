@@ -4,7 +4,7 @@
 import frappe
 from frappe.model.document import Document
 import requests
-from frappe.utils import now
+from frappe.utils import now, get_datetime
 
 
 class ETAPOSConnector(Document):
@@ -21,6 +21,17 @@ class ETAPOSConnector(Document):
 		if self.environment == "Production":
 			self.ETA_BASE = self.PROD_URL
 			self.ID_URL = self.PROD_ID_URL
+
+	def get_access_token(self):
+		if self.access_token:
+			access_token = self.get_password(fieldname="access_token")
+		else:
+			access_token = self.refresh_eta_token()
+		return (
+			access_token
+			if (access_token and now() < self.expires_in)
+			else self.refresh_eta_token()
+		)
 
 	@frappe.whitelist()
 	def refresh_eta_token(self):
@@ -43,6 +54,6 @@ class ETAPOSConnector(Document):
 			if eta_response.get("access_token"):
 				self.access_token = eta_response.get("access_token")
 				self.expires_in = frappe.utils.add_to_date(now(), seconds=eta_response.get("expires_in"))
-				self.save()
+				self.save(ignore_permissions=True)
 				frappe.db.commit()
 				return eta_response.get("access_token")
