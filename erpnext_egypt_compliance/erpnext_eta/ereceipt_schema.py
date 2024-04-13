@@ -352,9 +352,11 @@ def build_erceipt_json(docname: str):
     # total_items_discount: float = get_pos_receipt_total_items_discount()
     # extra_receipt_discount_data: List[SingleExtraReceiptDiscountData] = get_extra_receipt_discount_data()
     # fees_amount: float = get_pos_receipt_fees_amount()
-    _taxableItems = [x.taxableItems for x in item_data]
-    tax_totals: List[SingleTaxTotal] = get_pos_receipt_tax_totals(_taxableItems)
-
+    
+	# List comprehension to extract taxableItems
+    taxable_items_list = [item.taxableItems for item in item_data]
+    taxable_items_list = [taxable_item for sublist in taxable_items_list for taxable_item in sublist]
+    tax_totals: List[SingleTaxTotal] = get_pos_receipt_tax_totals(taxable_items_list)
     receipts: List[Receipt] = []
     receipt = Receipt(
             header=header,
@@ -375,7 +377,7 @@ def build_erceipt_json(docname: str):
             contractor=contractor,
             beneficiary=beneficiary,
         )
-    print("\n", receipt.dict())
+    
     seconds = POS_INVOICE_RAW_DATA.get("posting_time").seconds
     date_formated = eta_datetime_issued_format(POS_INVOICE_RAW_DATA.get("posting_date"), seconds)
     receipt.header.dateTimeIssued = date_formated
@@ -385,7 +387,7 @@ def build_erceipt_json(docname: str):
     # signatures: List[SingleSignature] = [SingleSignature()]
     receipts_response: ReceiptsResponse = ReceiptsResponse(receipts=receipts)
 
-    receipts_response_json: str = receipts_response.json()
+    receipts_response_json: str = receipts_response.model_dump_json()
     # submit_ereceipt(receipts_response_json)
     return download_ereceipt_json(docname, receipts_response_json)
 
@@ -593,7 +595,7 @@ def get_pos_receipt_item_data() -> List[SingleItemData]:
 def get_pos_receipt_tax_totals(taxableItems):
     total = collections.defaultdict(int)
     for item in taxableItems:
-        total[item.taxType] += frappe.utils.flt(item.get("amount"), 5)
+        total[item.taxType] += frappe.utils.flt(item.amount, 5)
 
     tax_totals = []
     for tax_type, amount in total.items():

@@ -1,0 +1,135 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:pos_profile",
+ "creation": "2024-04-13 17:14:19.374823",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "device_info_section",
+  "pos_name",
+  "column_break_edep",
+  "serial_number",
+  "access_details_section",
+  "pos_profile",
+  "environment",
+  "client_id",
+  "column_break_iwtj",
+  "client_secret",
+  "access_token",
+  "expires_in"
+ ],
+ "fields": [
+  {
+   "fieldname": "access_details_section",
+   "fieldtype": "Section Break",
+   "label": "Access Details"
+  },
+  {
+   "fieldname": "client_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Client ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_iwtj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "client_secret",
+   "fieldtype": "Password",
+   "in_list_view": 1,
+   "label": "Client Secret",
+   "reqd": 1
+  },
+  {
+   "fieldname": "access_token",
+   "fieldtype": "Password",
+   "label": "Access Token"
+  },
+  {
+   "fieldname": "expires_in",
+   "fieldtype": "Datetime",
+   "label": "Expires In"
+  },
+  {
+   "fieldname": "device_info_section",
+   "fieldtype": "Section Break",
+   "label": "Device Info"
+  },
+  {
+   "fieldname": "pos_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "POS Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_edep",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "serial_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Serial Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "environment",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Environment",
+   "options": "Pre-Production\nProduction"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-04-13 18:34:13.761309",
+ "modified_by": "Administrator",
+ "module": "ERPNext ETA",
+ "name": "ETA POS Connector",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ETA Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
