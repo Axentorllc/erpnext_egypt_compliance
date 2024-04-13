@@ -387,20 +387,27 @@ def build_erceipt_json(docname: str):
     # signatures: List[SingleSignature] = [SingleSignature()]
     receipts_response: ReceiptsResponse = ReceiptsResponse(receipts=receipts)
 
-    receipts_response_json: str = receipts_response.model_dump_json()
+    receipts_response_json: str = receipts_response.json()
     # submit_ereceipt(receipts_response_json)
-    return download_ereceipt_json(docname, receipts_response_json)
+    return receipts_response_json
 
-def download_ereceipt_json(docname, file_content):
-    frappe.local.response.filename = f"eReceipt-{docname}.json"
-    frappe.local.response.filecontent = file_content
-    frappe.local.response.type = "download"
+@frappe.whitelist()
+def download_ereceipt_json(docname):
+    file_content = build_erceipt_json(docname)
+    return download_eta_ereceipt_json(docname, file_content)
+    
+def download_eta_ereceipt_json(docname, file_content):
+	frappe.local.response.filename = f"eReceipt-{docname}.json"
+	frappe.local.response.filecontent = file_content
+	frappe.local.response.type = "download"
 
-
-def submit_ereceipt(receipt) -> None:
+@frappe.whitelist()
+def submit_ereceipt(docname, pos_profile) -> None:
     """Submit the POS E-Receipt to the API."""
-    connector = get_company_eta_connector(COMPANY_DATA.get("name"))
-    connector.submit_ereceipt(receipt)
+    ereceipt = build_erceipt_json(docname)
+    connector = frappe.get_doc("ETA POS Connector", pos_profile)
+    if connector:
+    	connector.submit_erecipt(ereceipt)
 
 
 def _pos_total_qty():
