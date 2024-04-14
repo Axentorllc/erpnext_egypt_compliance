@@ -63,25 +63,32 @@ class ETAPOSConnector(Document):
 			
 	def submit_erecipt(self, erecipe):	
 		headers = {
-			"content-type": "application/json; charset=utf-8",
+			"Content-Type": "application/json; charset=utf-8",
 			"Authorization": f"Bearer " + self.get_access_token(),
 		}
-		
+
 		url = self.ETA_BASE + "/receiptsubmissions"
 
 		data = json.dumps(erecipe, ensure_ascii=False).encode("utf8")
-		eta_response = make_request(method="POST", url=url, data=data, headers=headers)
-		eta_response = frappe._dict(eta_response)
-		if eta_response.get("acceptedDocuments"):
-			for doc in eta_response.get("acceptedDocuments"):
-				if doc.get("internalId"):
-					_id = doc.get("internalId")
-					fields = {
-						"custom_eta_uuid": doc.get("uuid"),
-						"eta_hash_key": doc.get("hashKey"),
-						"custom_eta_long_id" : doc.get("longId"),
-						"custom_eta_status": "Submitted",
-					}
-					frappe.db.set_value("POS Invoice", _id, field=fields)
-					frappe.db.commit()
+		print("\n\n", data)
+		try:
+			eta_response = requests.post(url, headers=headers, data=data)
+
+			eta_response = frappe._dict(eta_response.json())
+			print(eta_response)
+			if eta_response.get("acceptedDocuments"):
+				for doc in eta_response.get("acceptedDocuments"):
+					if doc.get("receiptNumber"):
+						_id = doc.get("receiptNumber")
+						fields = {
+							"custom_eta_uuid": doc.get("uuid"),
+							"custom_eta_hash_key": doc.get("hashKey"),
+							"custom_eta_long_id" : doc.get("longId"),
+							"custom_eta_status": "Submitted",
+						}
+						frappe.db.set_value("POS Invoice", _id, fields)
+						frappe.db.commit()
+		except Exception as e:
+			traceback = frappe.get_traceback()
+			frappe.log_error("E-Receipt", message=traceback)
 		return eta_response

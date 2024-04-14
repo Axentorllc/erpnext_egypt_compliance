@@ -170,7 +170,7 @@ class SingleItemData(BaseModel):
     # valueDifference: Optional[float] = Field(
     #     default=0, description="Value difference when selling goods already taxed."
     # )
-    @validator('netSale', 'quantity', 'unitPrice', 'totalSale', 'total', pre=True)
+    @validator('netSale', 'quantity', 'unitPrice', 'totalSale', 'total', pre=True, always=True)
     def round_float_values(cls, value):
         return frappe.utils.flt(value, 5)
 
@@ -180,7 +180,7 @@ class ReceiptBuyer(BaseModel):
         default="P",
         description="Buyer Type Codes. B:business in Egypt, P:natural person, F:foreigner.",
     )
-    id: str = Field(default="29501023201952", description="Buyer ID.")
+    id: str = Field(default="29501023501952", description="Buyer ID.")
     name: str = Field(
         default="",
         description="Registration name of the company or name and surname of the person.",
@@ -387,14 +387,15 @@ def build_erceipt_json(docname: str):
     # signatures: List[SingleSignature] = [SingleSignature()]
     receipts_response: ReceiptsResponse = ReceiptsResponse(receipts=receipts)
 
-    receipts_response_json: str = receipts_response.json()
+    receipts_response: str = receipts_response
     # submit_ereceipt(receipts_response_json)
-    return receipts_response_json
+    return receipts_response
 
 @frappe.whitelist()
 def download_ereceipt_json(docname):
     file_content = build_erceipt_json(docname)
-    return download_eta_ereceipt_json(docname, file_content)
+    ereceipt_as_json = file_content.model_dump_json()
+    return download_eta_ereceipt_json(docname, ereceipt_as_json)
     
 def download_eta_ereceipt_json(docname, file_content):
 	frappe.local.response.filename = f"eReceipt-{docname}.json"
@@ -407,7 +408,7 @@ def submit_ereceipt(docname, pos_profile) -> None:
     ereceipt = build_erceipt_json(docname)
     connector = frappe.get_doc("ETA POS Connector", pos_profile)
     if connector:
-    	connector.submit_erecipt(ereceipt)
+    	connector.submit_erecipt(ereceipt.model_dump())
 
 
 def _pos_total_qty():
