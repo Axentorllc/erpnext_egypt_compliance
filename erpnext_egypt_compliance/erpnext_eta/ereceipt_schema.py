@@ -409,7 +409,13 @@ def submit_ereceipt(docname, pos_profile) -> None:
     connector = frappe.get_doc("ETA POS Connector", pos_profile)
     if connector:
     	connector.submit_erecipt(ereceipt.model_dump())
-
+        
+@frappe.whitelist()      
+def fetch_ereceipt_status(docname):
+    pos_profile = frappe.db.get_value("POS Invoice", docname, "pos_profile")
+    connector = frappe.get_doc("ETA POS Connector", pos_profile)
+    if connector:
+        connector.update_ereceipt_docstatus(docname)
 
 def _pos_total_qty():
     """Add _total_qty to the POS Invoice Item."""

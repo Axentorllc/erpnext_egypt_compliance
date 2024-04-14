@@ -70,12 +70,10 @@ class ETAPOSConnector(Document):
 		url = self.ETA_BASE + "/receiptsubmissions"
 
 		data = json.dumps(erecipe, ensure_ascii=False).encode("utf8")
-		print("\n\n", data)
 		try:
 			eta_response = requests.post(url, headers=headers, data=data)
 
 			eta_response = frappe._dict(eta_response.json())
-			print(eta_response)
 			if eta_response.get("acceptedDocuments"):
 				for doc in eta_response.get("acceptedDocuments"):
 					if doc.get("receiptNumber"):
@@ -92,3 +90,42 @@ class ETAPOSConnector(Document):
 			traceback = frappe.get_traceback()
 			frappe.log_error("E-Receipt", message=traceback)
 		return eta_response
+	
+	def update_ereceipt_docstatus(self, docname):
+		# Get access token
+		access_token = self.get_access_token()
+		
+		if not access_token:
+			return "Failed to get access token"
+		
+		headers = {
+			"content-type": "application/json;charset=utf-8",
+			"Authorization": "Bearer " + access_token
+		}
+		
+		# Get UUID from POS Invoice
+		uuid = frappe.get_value("POS Invoice", docname, "custom_eta_uuid")
+		
+		if not uuid:
+			return "UUID not found for document: {}".format(docname)
+		
+		UUID_PATH = self.ETA_BASE + f"/receipts/{uuid}/details"
+		
+		# Send request to ETA service
+		try:
+			eta_response = requests.get(UUID_PATH, headers=headers)
+			eta_response.raise_for_status()  # Raise an exception for 4xx or 5xx status codes
+		except requests.RequestException as e:
+			frappe.log_error(title="Error fetching ETA details", message=e, reference_doctype="POS Invoice", reference_name=docname)
+			return "Error fetching ETA details: {}".format(str(e))
+		
+		# Process ETA response
+		if eta_response.ok:
+			eta_data = eta_response.json()
+			receipt_number = eta_data["receipt"]["receiptNumber"]
+			
+			if receipt_number:
+				frappe.db.set_value("POS Invoice", docname, "custom_eta_status", eta_data["receipt"]["status"])
+				return eta_data["receipt"]["status"]
+		
+		return "Failed to update status for document: {}".format(docname)

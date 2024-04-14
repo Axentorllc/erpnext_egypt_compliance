@@ -1,9 +1,9 @@
 frappe.ui.form.on('POS Invoice', {
   onload(frm) {
     console.log("onload");
-	
 		frm.trigger("eta_add_download_ereceipt_button");
 		frm.trigger("eta_submit_ereceipt")
+		frm.trigger("add_fetch_status_button")
   },
   eta_add_download_ereceipt_button(frm) {
 	  frm.add_custom_button('Download eReceipt Json', () => {
@@ -56,6 +56,27 @@ frappe.ui.form.on('POS Invoice', {
 				}
 			)
 		}, "eReceipt")
-	}
+	},
+	add_fetch_status_button(frm) {
+		frm.add_custom_button("Fetch eReceipt Status", () => {
+			frm.trigger("fetch_eta_status")
+		}, "eReceipt")
+	},
+	fetch_eta_status(frm) {
+		frappe.call({
+			method: "erpnext_egypt_compliance.erpnext_eta.ereceipt_schema.fetch_ereceipt_status",
+			args: { docname: frm.doc.name },
+			freeze: true,
+			freeze_message: __("Fetch Status..."),
+			callback: function (r) {
+				console.log(r.message)
+				if (!r.exc) {
+					frappe.show_alert("E-Receipt Status Updated");
+					cur_frm.reload_doc();
+				}
+			}
+		})
+
+	},
 
 });
