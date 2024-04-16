@@ -86,9 +86,12 @@ class ETAPOSConnector(Document):
 						}
 						frappe.db.set_value("POS Invoice", _id, fields)
 						frappe.db.commit()
+			if eta_response.get("error"):
+				frappe.log_error("Submit E-Receipt", message=eta_response.get("error"), reference_doctype="POS Invoice")
+
 		except Exception as e:
 			traceback = frappe.get_traceback()
-			frappe.log_error("E-Receipt", message=traceback)
+			frappe.log_error("Submit E-Receipt", message=traceback)
 		return eta_response
 	
 	def update_ereceipt_docstatus(self, docname):

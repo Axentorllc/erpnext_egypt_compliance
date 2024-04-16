@@ -14,6 +14,7 @@ from erpnext_egypt_compliance.erpnext_eta.utils import (
     eta_datetime_issued_format,
     get_company_eta_connector,
 )
+from frappe import _
 
 POS_INVOICE_RAW_DATA = {}
 COMPANY_DATA = {}
@@ -51,23 +52,6 @@ def serialize(document_structure):
         return serialized_string
     else:
          return '"' + str(document_structure) + '"'
-
-# def serialize(document_structure):
-#     if isinstance(document_structure, (int, float, str, bool)):
-#         return '"' + str(document_structure) + '"'
-    
-#     serialized_string = ""
-    
-#     for name, value in document_structure.items():
-#         if not isinstance(value, list):
-#             serialized_string += '"' + name.upper() + '"'
-#             serialized_string += serialize(value)
-#         else:
-#             serialized_string += '"' + name.upper() + '"'
-#             for array_element in value:
-#                 serialized_string += serialize(array_element)
-    
-#     return serialized_string
 
 
 class Beneficiary(BaseModel):
@@ -180,7 +164,7 @@ class ReceiptBuyer(BaseModel):
         default="P",
         description="Buyer Type Codes. B:business in Egypt, P:natural person, F:foreigner.",
     )
-    id: str = Field(default="29501023501952", description="Buyer ID.")
+    id: str = Field(default="", description="Buyer ID.")
     name: str = Field(
         default="",
         description="Registration name of the company or name and surname of the person.",
@@ -201,6 +185,9 @@ class ReceiptBuyer(BaseModel):
         if values.get("type") == "B":
             # Company Registration No. (RIN)
             value = COMPANY_DATA.get("eta_tax_id")
+        if values.get("type") == "P":
+            value = frappe.db.get_value("Customer", POS_INVOICE_RAW_DATA.get("customer"), "tax_id")
+
         return value
 
     @validator("name")
@@ -226,7 +213,7 @@ class ReceiptSeller(BaseModel):
     companyTradeName: str = Field(..., description="Registration name of the company.")
     branchCode: str = Field(..., description="Branch code as registered with tax authority")
     # TODO: deviceSerialNumber, syndicateLicenseNumber
-    deviceSerialNumber: str = Field(default="SERIAL0101", description="This is the POS serial number.")
+    deviceSerialNumber: str = Field(default="", description="This is the POS serial number.")
     syndicateLicenseNumber: str = Field(default="", description="This is the syndicate license number.")
     activityCode: str = Field(..., description="Activity types define the allowed activities for the company.")
     branchAddress: BranchAddress = Field(..., description="Structure representing the branchAddress information.")
@@ -343,6 +330,7 @@ def build_erceipt_json(docname: str):
     total_sales: float = sum([item.totalSale for item in item_data])
     net_amount: float = sum([item.netSale for item in item_data])
     total_amount: float = sum([item.total for item in item_data])
+    # TODO make payment method dynamic
     payment_method: str = "C"
     adjustment: float = 0.0
     contractor: Contractor = Contractor()
@@ -353,7 +341,7 @@ def build_erceipt_json(docname: str):
     # extra_receipt_discount_data: List[SingleExtraReceiptDiscountData] = get_extra_receipt_discount_data()
     # fees_amount: float = get_pos_receipt_fees_amount()
     
-	# List comprehension to extract taxableItems
+    # List comprehension to extract taxableItems
     taxable_items_list = [item.taxableItems for item in item_data]
     taxable_items_list = [taxable_item for sublist in taxable_items_list for taxable_item in sublist]
     tax_totals: List[SingleTaxTotal] = get_pos_receipt_tax_totals(taxable_items_list)
@@ -381,41 +369,66 @@ def build_erceipt_json(docname: str):
     seconds = POS_INVOICE_RAW_DATA.get("posting_time").seconds
     date_formated = eta_datetime_issued_format(POS_INVOICE_RAW_DATA.get("posting_date"), seconds)
     receipt.header.dateTimeIssued = date_formated
-    uuid = validate_and_generate_uuid(receipt.dict())
+    uuid = validate_and_generate_uuid(receipt.model_dump())
     receipt.header.uuid = uuid
     receipts.append(receipt)
     # signatures: List[SingleSignature] = [SingleSignature()]
     receipts_response: ReceiptsResponse = ReceiptsResponse(receipts=receipts)
 
     receipts_response: str = receipts_response
-    # submit_ereceipt(receipts_response_json)
+    
     return receipts_response
 
 @frappe.whitelist()
 def download_ereceipt_json(docname):
-    file_content = build_erceipt_json(docname)
-    ereceipt_as_json = file_content.model_dump_json()
-    return download_eta_ereceipt_json(docname, ereceipt_as_json)
+    try:
+        file_content = build_erceipt_json(docname)
+        ereceipt_as_json = file_content.model_dump_json()
+        return download_eta_ereceipt_json(docname, ereceipt_as_json)
+    except ValueError as e:
+        frappe.log_error(title="Download E-Receipt", message=e, reference_doctype="POS Invoice", reference_name=docname)
+        frappe.throw(
+                _(str(e)),
+                title=_("Download e-Receipt Failed"),
+            )
     
 def download_eta_ereceipt_json(docname, file_content):
-	frappe.local.response.filename = f"eReceipt-{docname}.json"
-	frappe.local.response.filecontent = file_content
-	frappe.local.response.type = "download"
+    frappe.local.response.filename = f"eReceipt-{docname}.json"
+    frappe.local.response.filecontent = file_content
+    frappe.local.response.type = "download"
+
 
 @frappe.whitelist()
-def submit_ereceipt(docname, pos_profile) -> None:
+def submit_ereceipt(docname, pos_profile, raise_throw=True) -> None:
     """Submit the POS E-Receipt to the API."""
-    ereceipt = build_erceipt_json(docname)
-    connector = frappe.get_doc("ETA POS Connector", pos_profile)
-    if connector:
-    	connector.submit_erecipt(ereceipt.model_dump())
+    try:
+        ereceipt = build_erceipt_json(docname)
+        connector = frappe.get_doc("ETA POS Connector", pos_profile)
+        if connector:
+            connector.submit_erecipt(ereceipt.model_dump())
+    except Exception as e:
+        frappe.log_error(title="Submit e-Receipt", message=e, reference_doctype="POS Invoice", reference_name=docname)
+        if raise_throw:
+            frappe.throw(
+                    _(e),
+                    title=_("Submitting e-Receipt Failed"),)
         
 @frappe.whitelist()      
-def fetch_ereceipt_status(docname):
-    pos_profile = frappe.db.get_value("POS Invoice", docname, "pos_profile")
-    connector = frappe.get_doc("ETA POS Connector", pos_profile)
-    if connector:
-        connector.update_ereceipt_docstatus(docname)
+def fetch_ereceipt_status(docname, raise_throw=True):
+    try:
+        pos_profile = frappe.db.get_value("POS Invoice", docname, "pos_profile")
+        connector = frappe.get_doc("ETA POS Connector", pos_profile)
+        if connector:
+            result = connector.update_ereceipt_docstatus(docname)
+            if raise_throw:
+                frappe.msgprint(_(result))
+    except Exception as e:
+        frappe.log_error(title="Fetch e-Receipt Status", message=e, reference_doctype="POS Invoice", reference_name=docname)
+        if raise_throw:
+            frappe.throw(
+                    _(e),
+                    title=_("Fetch e-Receipt Failed"),)
+
 
 def _pos_total_qty():
     """Add _total_qty to the POS Invoice Item."""
@@ -454,11 +467,12 @@ def get_pos_receipt_seller() -> ReceiptSeller:
     branch = frappe.get_doc("Branch", COMPANY_DATA.get("eta_default_branch")).as_dict()
     branch_address = frappe.get_doc("Address", branch.get("eta_branch_address")).as_dict()
     country_code = frappe.db.get_value("Country", branch_address.country, "code")
+    device_serial = frappe.db.get_value("ETA POS Connector", POS_INVOICE_RAW_DATA.get("pos_profile"), "serial_number")
     seller = ReceiptSeller(
         rin=COMPANY_DATA.get("eta_tax_id"),
         companyTradeName=COMPANY_DATA.get("eta_issuer_name"),
         branchCode=branch.get("eta_branch_id"),
-        # deviceSerialNumber=company.get("company"),
+        deviceSerialNumber=device_serial,
         # syndicateLicenseNumber=company.get("company"),
         activityCode=COMPANY_DATA.get("eta_default_activity_code"),
         branchAddress=BranchAddress(
@@ -480,9 +494,10 @@ def get_pos_receipt_seller() -> ReceiptSeller:
 def get_pos_receipt_buyer() -> ReceiptBuyer:
     """Get the POS E-Receipt Buyer."""
     customer = frappe.get_doc("Customer", POS_INVOICE_RAW_DATA.get("customer")).as_dict()
+        
     buyer = ReceiptBuyer(
         type=customer.get("eta_receiver_type"),
-        # id=COMPANY_DATA.get("eta_tax_id"),
+        id=customer.get("tax_id"),
         name=COMPANY_DATA.get("eta_issuer_name"),
     )
     return buyer
