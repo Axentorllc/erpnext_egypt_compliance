@@ -41,8 +41,8 @@ def serialize(document_structure):
         for name, value in document_structure.items():
             if isinstance(value, list):
                 list_key = name
+                serialized_string += '"' + list_key.upper() + '"'
                 for item in value:
-                    serialized_string += '"' + list_key.upper() + '"'
                     serialized_string += '"' + name.upper() + '"'
                     serialized_string += serialize(item)
 

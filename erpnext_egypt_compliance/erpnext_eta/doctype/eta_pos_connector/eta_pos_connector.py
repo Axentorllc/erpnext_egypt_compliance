@@ -72,8 +72,8 @@ class ETAPOSConnector(Document):
 		data = json.dumps(erecipe, ensure_ascii=False).encode("utf8")
 		try:
 			eta_response = requests.post(url, headers=headers, data=data)
-
 			eta_response = frappe._dict(eta_response.json())
+			print(eta_response)
 			if eta_response.get("acceptedDocuments"):
 				for doc in eta_response.get("acceptedDocuments"):
 					if doc.get("receiptNumber"):
