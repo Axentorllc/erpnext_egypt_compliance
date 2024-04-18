@@ -327,8 +327,8 @@ def build_erceipt_json(docname: str):
     seller: ReceiptSeller = get_pos_receipt_seller()
     buyer: ReceiptBuyer = get_pos_receipt_buyer()
     item_data: List[SingleItemData] = get_pos_receipt_item_data()
-    total_sales: float = sum([item.totalSale for item in item_data])
-    net_amount: float = sum([item.netSale for item in item_data])
+    total_sales: float = frappe.utils.flt(sum([item.totalSale for item in item_data]), 5)
+    net_amount: float = frappe.utils.flt(sum([item.netSale for item in item_data]), 5)
     total_amount: float = sum([item.total for item in item_data])
     # TODO make payment method dynamic
     payment_method: str = "C"
@@ -419,9 +419,9 @@ def fetch_ereceipt_status(docname, raise_throw=True):
         pos_profile = frappe.db.get_value("POS Invoice", docname, "pos_profile")
         connector = frappe.get_doc("ETA POS Connector", pos_profile)
         if connector:
-            result = connector.update_ereceipt_docstatus(docname)
+            result = connector.get_receipt_submission(docname)
             if raise_throw:
-                frappe.msgprint(_(result))
+                frappe.msgprint(_(str(result)))
     except Exception as e:
         frappe.log_error(title="Fetch e-Receipt Status", message=e, reference_doctype="POS Invoice", reference_name=docname)
         if raise_throw:
