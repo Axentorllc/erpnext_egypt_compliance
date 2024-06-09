@@ -498,7 +498,7 @@ def get_pos_receipt_buyer() -> ReceiptBuyer:
     buyer = ReceiptBuyer(
         type=customer.get("eta_receiver_type"),
         id=customer.get("tax_id"),
-        name=COMPANY_DATA.get("eta_issuer_name"),
+        name=customer.get("customer_name") or "Walk-in Customer"
     )
     return buyer
 
