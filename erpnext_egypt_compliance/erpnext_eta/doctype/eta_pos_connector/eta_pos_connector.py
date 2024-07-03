@@ -7,6 +7,7 @@ import requests
 from frappe.utils import now, get_datetime
 from frappe.integrations.utils import make_request
 import json
+from erpnext_egypt_compliance.erpnext_eta.utils import create_eta_log
 
 
 class ETAPOSConnector(Document):
@@ -61,7 +62,7 @@ class ETAPOSConnector(Document):
 				frappe.db.commit()
 				return eta_response.get("access_token")
 			
-	def submit_erecipt(self, erecipe):	
+	def submit_erecipt(self, erecipe, doctype):	
 		headers = {
 			"Content-Type": "application/json; charset=utf-8",
 			"Authorization": f"Bearer " + self.get_access_token(),
@@ -71,22 +72,19 @@ class ETAPOSConnector(Document):
 
 		data = json.dumps(erecipe, ensure_ascii=False).encode("utf8")
 		try:
-			eta_response = requests.post(url, headers=headers, data=data)
-			eta_response = frappe._dict(eta_response.json())
+			_eta_response = requests.post(url, headers=headers, data=data)
+			eta_response = frappe._dict(_eta_response.json())
+			print(eta_response)
 			if eta_response.get("acceptedDocuments"):
 				for doc in eta_response.get("acceptedDocuments"):
 					if doc.get("receiptNumber"):
 						_id = doc.get("receiptNumber")
-						fields = {
-							"custom_eta_uuid": doc.get("uuid"),
-							"custom_eta_hash_key": doc.get("hashKey"),
-							"custom_eta_long_id" : doc.get("longId"),
-							"custom_eta_submission_id": eta_response.get("submissionId"),
-							"custom_eta_status": "Submitted",
-						}
-						frappe.db.set_value("POS Invoice", _id, fields)
+						self.update_eta_fields(doctype, _id, doc, eta_response.get("submissionId"))
+						create_eta_log(doctype, _id, eta_response["header"]["statusCode"], eta_response)
 						frappe.db.commit()
 			if eta_response.get("error"):
+				for r in erecipe["receipts"]:
+					create_eta_log(doctype, r.get("header")["receiptNumber"], _eta_response.status_code, eta_response)
 				frappe.log_error("Submit E-Receipt", message=eta_response.get("error"), reference_doctype="POS Invoice")
 
 		except Exception as e:
@@ -164,6 +162,25 @@ class ETAPOSConnector(Document):
 			for r in eta_data["receipts"]:
 				if r.get("errors"):
 					result["errors"].extend([error for error in r.get("errors")])
-			return result
+			return result["status"]
 		
 		return "Failed to update status for document: {}".format(docname)
+	
+	def update_eta_fields(self, doctype, docname, eta_response, submissionId):
+		if doctype == "Sales Invoice":
+			fields = {
+				"eta_uuid": eta_response.get("uuid"),
+				"eta_hash_key": eta_response.get("hashKey"),
+				"eta_long_key": eta_response.get("longId"),
+				"eta_submission_id": submissionId,
+				"eta_status": "Submitted",
+			}
+		else:
+			fields = {
+				"custom_eta_uuid": eta_response.get("uuid"),
+				"custom_eta_hash_key": eta_response.get("hashKey"),
+				"custom_eta_long_id": eta_response.get("longId"),
+				"custom_eta_submission_id": submissionId,
+				"custom_eta_status": "Submitted",
+			}
+		frappe.db.set_value(doctype, docname, fields)

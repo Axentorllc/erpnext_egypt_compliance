@@ -7,6 +7,8 @@ frappe.ui.form.on('Sales Invoice', {
 		frm.trigger('eta_add_submit_button');
 		frm.trigger('eta_fetch_status_button');
 		frm.trigger('eta_add_status_indicator');
+		frm.trigger('eta_add_download_e_receipt_button')
+		frm.trigger('eta_submit_ereceipt')
 	},
 	refresh(frm) {
 	},
@@ -89,5 +91,59 @@ frappe.ui.form.on('Sales Invoice', {
 			}
 		}
 		 $('#eta-status').html('<span class="eta-pill indicator-pill whitespace-nowrap ' + eta_status_class +' ">' + eta_status_str + '</span>')
+	},
+	eta_add_download_e_receipt_button(frm) {
+		frm.add_custom_button('Download e-Receipt Json', () => {
+
+		var url = frappe.urllib.get_base_url() + '/api/method/erpnext_egypt_compliance.erpnext_eta.ereceipt_schema.download_ereceipt_json?docname=' + encodeURIComponent(frm.doc.name) + "&doctype=" +  encodeURIComponent(frm.doc.doctype)
+			$.ajax({
+				url: url,
+				type: 'GET',
+				success: function (result) {
+					if (jQuery.isEmptyObject(result)) {
+						frappe.msgprint('Failed to load e-Receipt Invoice format.');
+					}
+					else {
+						window.location = url;
+					}
+					if (result.exc){
+						console.log(exc)
+					}
+				},
+				error:(r) => {
+					if (r.responseJSON.exc_type) {
+						console.log(r)
+						var server_massages =  jQuery.parseJSON(r.responseJSON._server_messages)
+						var object = JSON.parse(server_massages)
+						frappe.throw({message: object.message , title: object.title})
+
+					}
+				}
+			})
+
+		}, "eReceipt")
+	},
+	eta_submit_ereceipt(frm) {
+		frm.add_custom_button("Submit eReceipt", () => {
+			frappe.call(
+				{
+					method: "erpnext_egypt_compliance.erpnext_eta.ereceipt_schema.submit_ereceipt",
+					args: {
+						docname: frm.docname,
+						pos_profile: frm.doc.pos_profile,
+						doctype: frm.doc.doctype,
+					},
+					freeze: true,
+					freeze_message: __("Submitting ..."),
+					callback: function (r) {
+						if (!r.exc) {
+							console.log(r)
+						}
+					},
+
+
+				}
+			)
+		}, "eReceipt")
 	},
 })

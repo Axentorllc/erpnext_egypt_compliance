@@ -192,7 +192,8 @@ class ReceiptBuyer(BaseModel):
 
     @validator("name")
     def get_default_name(cls, value, values):
-        return COMPANY_DATA.get("eta_issuer_name")
+        value = POS_INVOICE_RAW_DATA.get("customer_name") or "Walk-in Customer"
+        return value
 
 
 class BranchAddress(BaseModel):
@@ -316,11 +317,11 @@ class ItemWiseTaxDetails(BaseModel):
 
 
 @frappe.whitelist()
-def build_erceipt_json(docname: str):
+def build_erceipt_json(docname: str, doctype: str):
     """Entry point for creating the POS E-Receipt json."""
 
     # Set the global raw data: POS_INVOICE_RAW_DATA, COMPANY_DATA
-    set_global_raw_data(docname)
+    set_global_raw_data(docname, doctype)
 
     header: ReceiptHeader = get_pos_ereceipt_header()
     document_type: ReceiptDocumentType = ReceiptDocumentType()
@@ -380,9 +381,9 @@ def build_erceipt_json(docname: str):
     return receipts_response
 
 @frappe.whitelist()
-def download_ereceipt_json(docname):
+def download_ereceipt_json(docname, doctype):
     try:
-        file_content = build_erceipt_json(docname)
+        file_content = build_erceipt_json(docname, doctype)
         ereceipt_as_json = file_content.model_dump_json()
         return download_eta_ereceipt_json(docname, ereceipt_as_json)
     except ValueError as e:
@@ -399,13 +400,13 @@ def download_eta_ereceipt_json(docname, file_content):
 
 
 @frappe.whitelist()
-def submit_ereceipt(docname, pos_profile, raise_throw=True) -> None:
+def submit_ereceipt(docname, pos_profile, doctype, raise_throw=True) -> None:
     """Submit the POS E-Receipt to the API."""
     try:
-        ereceipt = build_erceipt_json(docname)
+        ereceipt = build_erceipt_json(docname, doctype)
         connector = frappe.get_doc("ETA POS Connector", pos_profile)
         if connector:
-            connector.submit_erecipt(ereceipt.model_dump())
+            connector.submit_erecipt(ereceipt.model_dump(), doctype)
     except Exception as e:
         frappe.log_error(title="Submit e-Receipt", message=e, reference_doctype="POS Invoice", reference_name=docname)
         if raise_throw:
@@ -438,13 +439,13 @@ def _pos_total_qty():
     POS_INVOICE_RAW_DATA["_total_qty"] = total
 
 
-def set_global_raw_data(docname: str) -> None:
+def set_global_raw_data(docname: str, doctype: str) -> None:
     """Get the raw POS data from the database."""
     global POS_INVOICE_RAW_DATA
     global COMPANY_DATA
 
     # Set the global POS data
-    POS_INVOICE_RAW_DATA = frappe.get_doc("POS Invoice", docname).as_dict()
+    POS_INVOICE_RAW_DATA = frappe.get_doc(doctype, docname).as_dict()
     _pos_total_qty()
 
     # Set the global company data

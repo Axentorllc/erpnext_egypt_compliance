@@ -110,4 +110,12 @@ def autosubmit_eta_process():
 		except:
 			print("An exception occurred")  # TODO handle error properly.
 
-	
+def create_eta_log(doctype: str, docname: str, status_code: str, eta_response: str):
+	frappe.get_doc({
+		"doctype": "ETA Log", 
+		"reference_doctype": doctype,
+		"reference_docname": docname,
+		"status_code": status_code,
+		"eta_response": eta_response
+	}).insert()
+

@@ -7,7 +7,7 @@ frappe.ui.form.on('POS Invoice', {
   },
   eta_add_download_ereceipt_button(frm) {
 	  frm.add_custom_button('Download eReceipt Json', () => {
-		var url = frappe.urllib.get_base_url() + '/api/method/erpnext_egypt_compliance.erpnext_eta.ereceipt_schema.download_ereceipt_json?docname=' + encodeURIComponent(frm.doc.name)
+		var url = frappe.urllib.get_base_url() + '/api/method/erpnext_egypt_compliance.erpnext_eta.ereceipt_schema.download_ereceipt_json?docname=' + encodeURIComponent(frm.doc.name) + "&doctype=" +  encodeURIComponent(frm.doc.doctype)
       
 			$.ajax({
 				url: url,
