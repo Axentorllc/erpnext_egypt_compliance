@@ -9,6 +9,9 @@ from frappe.integrations.utils import make_request
 import json
 from erpnext_egypt_compliance.erpnext_eta.utils import create_eta_log
 
+from requests.adapters import HTTPAdapter
+import ssl
+import urllib3
 
 class ETAPOSConnector(Document):
 	def __init__(self, *args, **kwargs):
@@ -38,19 +41,21 @@ class ETAPOSConnector(Document):
 
 	@frappe.whitelist()
 	def refresh_eta_token(self):
+		eta_session = ETASession().get_session()
+
 		headers = {
 			"content-type": "application/x-www-form-urlencoded",
 			"posserial": self.serial_number,
-			"pososversion": "os",
+			"pososversion": "windows",
 		}
-		response = requests.post(
+		response = eta_session.post(
 			self.ID_URL,
 			data={
 				"grant_type": "client_credentials",
 				"client_id": self.client_id,
 				"client_secret": self.get_password(fieldname="client_secret", raise_exception=False),
 			},
-			headers=headers,
+			headers=headers
 		)
 
 		if response.status_code == 200:
@@ -72,7 +77,8 @@ class ETAPOSConnector(Document):
 
 		data = json.dumps(erecipe, ensure_ascii=False).encode("utf8")
 		try:
-			_eta_response = requests.post(url, headers=headers, data=data)
+			eta_session = ETASession().get_session()
+			_eta_response = eta_session.post(url, headers=headers, data=data)
 			eta_response = frappe._dict(_eta_response.json())
 			if eta_response.get("acceptedDocuments"):
 				for doc in eta_response.get("acceptedDocuments"):
@@ -84,6 +90,7 @@ class ETAPOSConnector(Document):
 			if eta_response.get("error"):
 				for r in erecipe["receipts"]:
 					create_eta_log(doctype, r.get("header")["receiptNumber"], _eta_response.status_code, eta_response)
+					frappe.db.commit()
 				frappe.log_error("Submit E-Receipt", message=eta_response.get("error"), reference_doctype="POS Invoice")
 
 		except Exception as e:
@@ -183,3 +190,35 @@ class ETAPOSConnector(Document):
 				"custom_eta_status": "Submitted",
 			}
 		frappe.db.set_value(doctype, docname, fields)
+  
+  
+class ETASession:
+	def __init__(self):
+		# Create a SSLContext object with TLSv1.2
+		ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+		# ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+		# ssl_context.options |= ssl.OP_NO_RENEGOTIATION
+		ssl_context.options |= 0x4
+		# Create a new Requests Session
+		self.session = requests.Session()
+
+		# Create an adapter with the SSL context
+		adapter = HTTPAdapter(
+			pool_connections=100,
+			pool_maxsize=100,
+			max_retries=3,
+			pool_block=True
+		)
+		adapter.poolmanager = urllib3.PoolManager(
+			num_pools= adapter._pool_connections,
+			maxsize= adapter._pool_maxsize,
+			block= adapter._pool_block,
+			ssl_context=ssl_context
+		)
+
+		# Mount the adapter to the session
+		self.session.mount('https://', adapter)
+
+
+	def get_session(self):
+		return self.session

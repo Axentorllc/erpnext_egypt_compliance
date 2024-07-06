@@ -468,7 +468,7 @@ def get_pos_receipt_seller() -> ReceiptSeller:
     branch = frappe.get_doc("Branch", COMPANY_DATA.get("eta_default_branch")).as_dict()
     branch_address = frappe.get_doc("Address", branch.get("eta_branch_address")).as_dict()
     country_code = frappe.db.get_value("Country", branch_address.country, "code")
-    device_serial = frappe.db.get_value("ETA POS Connector", POS_INVOICE_RAW_DATA.get("pos_profile"), "serial_number")
+    device_serial = str(frappe.db.get_value("ETA POS Connector", POS_INVOICE_RAW_DATA.get("pos_profile"), "serial_number"))
     seller = ReceiptSeller(
         rin=COMPANY_DATA.get("eta_tax_id"),
         companyTradeName=COMPANY_DATA.get("eta_issuer_name"),
