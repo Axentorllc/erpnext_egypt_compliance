@@ -15,6 +15,7 @@ from erpnext_egypt_compliance.erpnext_eta.utils import (
     get_company_eta_connector,
 )
 from frappe import _
+from erpnext_egypt_compliance.erpnext_eta.ereceipt_submitter import EReceiptSubmitter
 
 POS_INVOICE_RAW_DATA = {}
 COMPANY_DATA = {}
@@ -406,9 +407,11 @@ def submit_ereceipt(docname, pos_profile, doctype, raise_throw=True) -> None:
         ereceipt = build_erceipt_json(docname, doctype)
         connector = frappe.get_doc("ETA POS Connector", pos_profile)
         if connector:
-            connector.submit_erecipt(ereceipt.model_dump(), doctype)
+            eta_submitter = EReceiptSubmitter(connector)
+            processed_docs = eta_submitter.submit_ereceipt(ereceipt.model_dump(), doctype)
+            # connector.submit_erecipt(, doctype)
     except Exception as e:
-        frappe.log_error(title="Submit e-Receipt", message=e, reference_doctype="POS Invoice", reference_name=docname)
+        frappe.log_error(title="Submit E-Receipt", message=e, reference_doctype="POS Invoice", reference_name=docname)
         if raise_throw:
             frappe.throw(
                     _(e),

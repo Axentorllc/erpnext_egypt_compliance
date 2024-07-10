@@ -67,45 +67,7 @@ class ETAPOSConnector(Document):
 				frappe.db.commit()
 				return eta_response.get("access_token")
 			
-	def submit_erecipt(self, ereceipts, doctype):	
-		headers = {
-			"Content-Type": "application/json; charset=utf-8",
-			"Authorization": f"Bearer " + self.get_access_token(),
-		}
-
-		url = self.ETA_BASE + "/receiptsubmissions"
-
-		data = json.dumps(ereceipts, ensure_ascii=False).encode("utf8")
-		try:
-			eta_session = ETASession().get_session()
-			_eta_response = eta_session.post(url, headers=headers, data=data)
-			eta_response = frappe._dict(_eta_response.json())
-
-			documents = [{"reference_doctype": doctype, "reference_document": d.get("header")["receiptNumber"]} for d in ereceipts.get("receipts", [])]
-			initial_eta_log = create_eta_log(from_doctype=doctype, documents=documents, submission_summary=f"Total no of receipts: {len(ereceipts.get('receipts'))}")
-			if eta_response.get("acceptedDocuments") or eta_response.get("rejectedDocuments"):
-				summary_message = f"""Total no of receipts: {len(ereceipts.get('receipts'))}\nTotal no of accepted: {len(eta_response.get('acceptedDocuments', []))}\nTotal no of rejected: {len(eta_response.get('rejectedDocuments', []))}\n""".strip()
-				submission_status = "Partially Succeeded" if (len(eta_response.get('acceptedDocuments', [])) < len(ereceipts.get('receipts', []))) else "Completed"
-				initial_eta_log.status_code = _eta_response.status_code
-				initial_eta_log.submission_id = eta_response.get("submissionId")
-				initial_eta_log.submission_summary = summary_message
-				initial_eta_log.submission_status = submission_status
-				initial_eta_log.save()
-				self.process_documents(eta_response, doctype, initial_eta_log)
-
-			if eta_response.get("error"):
-				initial_eta_log.status_code = _eta_response.status_code
-				initial_eta_log.eta_response = str(eta_response.get("error"))
-				initial_eta_log.submission_status = "Failed"
-				initial_eta_log.save()
-			
-			frappe.db.commit()
-
-		except Exception as e:
-			traceback = frappe.get_traceback()
-			frappe.log_error("Submit E-Receipt", message=traceback)
-		return eta_response
-	
+				
 	def update_ereceipt_docstatus(self, docname):
 		# Get access token
 		access_token = self.get_access_token()
@@ -180,15 +142,7 @@ class ETAPOSConnector(Document):
 		
 		return "Failed to update status for document: {}".format(docname)
 	
-	def process_documents(self, eta_response, doctype, log_name):
-		for doc in eta_response.get("acceptedDocuments", []):
-			if doc.get("receiptNumber"):
-				docname = doc.get("receiptNumber")
-				self.update_eta_fields(doctype, docname, doc, eta_response.get("submissionId"))
-				fields = {"uuid": doc.get("uuid"), "long_id": doc.get("longId"), "accepted": True}
-				child_docname = frappe.db.get_value("ETA Log Documents", {"parent": log_name.get("name"), "reference_doctype": doctype ,"reference_document": docname}, as_dict=True)
-				frappe.db.set_value("ETA Log Documents", child_docname.get("name"), fields, debug=True)
-
+		
 		
 		for doc in eta_response.get("rejectedDocuments", []):
 			if doc.get("receiptNumber"):
@@ -197,6 +151,39 @@ class ETAPOSConnector(Document):
 				fields = {"uuid": doc.get("uuid"), "error": parse_error_details(doc.get("error", {})), "accepted": False}
 				frappe.db.set_value(dt="ETA Log Documents", dn={"parent": log_name.get("name"), "reference_doctype": doctype ,"reference_document": docname}, field=fields)
 
+		for doc in eta_response.get("rejectedDocuments", []):
+			if doc.get("receiptNumber"):
+				docname = doc.get("receiptNumber")
+				self.update_eta_fields(doctype, docname, doc, eta_response.get("submissionId"))
+				fields = {"uuid": doc.get("uuid"), "error": parse_error_details(doc.get("error", {})), "accepted": False}
+				frappe.db.set_value(dt="ETA Log Documents", dn={"parent": log_name.get("name"), "reference_doctype": doctype ,"reference_document": docname}, field=fields)
+
+
+	def log_errors(self, erecipe, eta_response, doctype, status_code):
+		for r in erecipe["receipts"]:
+			create_eta_log(doctype, r.get("header")["receiptNumber"], status_code, eta_response)
+			frappe.db.commit()
+		frappe.log_error("Submit E-Receipt", message=eta_response.get("error"), reference_doctype="POS Invoice")
+	
+	def update_eta_fields(self, doctype, docname, eta_response, submissionId):
+		if doctype == "Sales Invoice":
+			fields = {
+				"eta_uuid": eta_response.get("uuid"),
+				"eta_hash_key": eta_response.get("hashKey"),
+				"eta_long_key": eta_response.get("longId"),
+				"eta_submission_id": submissionId,
+				"eta_status": "Submitted",
+			}
+		else:
+			fields = {
+				"custom_eta_uuid": eta_response.get("uuid"),
+				"custom_eta_hash_key": eta_response.get("hashKey"),
+				"custom_eta_long_id": eta_response.get("longId"),
+				"custom_eta_submission_id": submissionId,
+				"custom_eta_status": "Submitted",
+			}
+		frappe.db.set_value(doctype, docname, fields)
+	
 	def log_errors(self, erecipe, eta_response, doctype, status_code):
 		for r in erecipe["receipts"]:
 			create_eta_log(doctype, r.get("header")["receiptNumber"], status_code, eta_response)
