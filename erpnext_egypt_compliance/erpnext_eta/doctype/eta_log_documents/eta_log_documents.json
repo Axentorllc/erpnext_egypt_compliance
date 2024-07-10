@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "creation": "2024-07-09 10:41:54.707134",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "reference_doctype",
+  "column_break_ybzk",
+  "reference_document",
+  "accepted",
+  "section_break_vsrn",
+  "uuid",
+  "column_break_yjim",
+  "long_id",
+  "section_break_uwpf",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Reference DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ybzk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reference_document",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Reference Document",
+   "options": "reference_doctype",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.reference_doctype;",
+   "fieldname": "accepted",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Accepted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_vsrn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "uuid",
+   "fieldtype": "Data",
+   "label": "UUID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_yjim",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "long_id",
+   "fieldtype": "Data",
+   "label": "Long ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_uwpf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Code",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-07-10 11:16:28.316969",
+ "modified_by": "Administrator",
+ "module": "ERPNext ETA",
+ "name": "ETA Log Documents",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

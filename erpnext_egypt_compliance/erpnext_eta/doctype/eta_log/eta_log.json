@@ -5,38 +5,21 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "reference_section",
-  "reference_doctype",
-  "column_break_altu",
-  "reference_docname",
+  "posting_date",
+  "column_break_codv",
+  "from_doctype",
   "response_details_section",
   "status_code",
-  "eta_response"
+  "eta_response",
+  "section_break_fnmm",
+  "documents",
+  "submission_summary_section",
+  "submission_status",
+  "submission_summary",
+  "column_break_yzif",
+  "submission_id"
  ],
  "fields": [
-  {
-   "fieldname": "reference_doctype",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Reference DocType",
-   "options": "DocType"
-  },
-  {
-   "fieldname": "column_break_altu",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "reference_docname",
-   "fieldtype": "Dynamic Link",
-   "in_list_view": 1,
-   "label": "Reference Docname",
-   "options": "reference_doctype"
-  },
-  {
-   "fieldname": "reference_section",
-   "fieldtype": "Section Break",
-   "label": "Reference"
-  },
   {
    "fieldname": "response_details_section",
    "fieldtype": "Section Break",
@@ -50,6 +33,65 @@
    "read_only": 1
   },
   {
+   "fieldname": "submission_summary_section",
+   "fieldtype": "Section Break",
+   "label": "Submission Summary"
+  },
+  {
+   "fieldname": "submission_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Submission Status",
+   "options": "Started\nPartially Succeeded\nFailed\nCompleted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "submission_summary",
+   "fieldtype": "Small Text",
+   "label": "Submission Summary",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_fnmm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "documents",
+   "fieldtype": "Table",
+   "label": "Documents",
+   "options": "ETA Log Documents"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_yzif",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "submission_id",
+   "fieldtype": "Data",
+   "label": "Submission ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_codv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "from_doctype",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "From Doctype",
+   "options": "POS Invoice\nSales Invoice",
+   "read_only": 1
+  },
+  {
    "fieldname": "eta_response",
    "fieldtype": "Code",
    "label": "ETA Response",
@@ -58,7 +100,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-03 16:34:25.118563",
+ "modified": "2024-07-10 14:03:37.528395",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "ETA Log",

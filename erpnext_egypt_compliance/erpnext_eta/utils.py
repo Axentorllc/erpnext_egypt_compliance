@@ -110,12 +110,49 @@ def autosubmit_eta_process():
 		except:
 			print("An exception occurred")  # TODO handle error properly.
 
-def create_eta_log(doctype: str, docname: str, status_code: str, eta_response: str):
-	frappe.get_doc({
+def create_eta_log(
+	posting_date: datetime = None,
+	from_doctype: str = None,
+	documents: list = None,
+	status_code: str = None,
+	submission_summary: str = "",
+	submission_status: str = "Started"
+):
+	doc = frappe.get_doc({
 		"doctype": "ETA Log", 
-		"reference_doctype": doctype,
-		"reference_docname": docname,
+		"from_doctype": from_doctype,
+		"posting_date": posting_date or frappe.utils.now(),
 		"status_code": status_code,
-		"eta_response": eta_response
+		"documents": documents or [],
+		"submission_status": submission_status,
+		"submission_summary": submission_summary
 	}).insert()
+	return doc
+
+def parse_error_details(error_object):
+	error_object = frappe.parse_json(error_object)
+
+	# Extract error message and target
+	error_message = error_object.get("message", "No error message provided")
+	error_target = error_object.get("target", "N/A")
+
+	error_msg = f"Error Message: {error_message}\n"
+	error_msg += f"Target: {error_target}\n"
+
+	# Process error details
+	error_details = error_object.get("details", [])
+	for detail in error_details:
+		code = detail.get("code", "N/A")
+		message = detail.get("message", "No message provided")
+		target = detail.get("target", "N/A")
+		property_path = detail.get("propertyPath", "N/A")
+		
+		error_msg += f"\nDetail:\n"
+		error_msg += f"  Code: {code}\n"
+		error_msg += f"  Message: {message}\n"
+		error_msg += f"  Target: {target}\n"
+		error_msg += f"  Property Path: {property_path}\n"
+
+	return error_msg
+
 
