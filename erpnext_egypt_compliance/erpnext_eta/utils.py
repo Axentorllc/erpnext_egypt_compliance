@@ -116,7 +116,8 @@ def create_eta_log(
 	documents: list = None,
 	status_code: str = None,
 	submission_summary: str = "",
-	submission_status: str = "Started"
+	submission_status: str = "Started",
+	pos_profile: str = None
 ):
 	doc = frappe.get_doc({
 		"doctype": "ETA Log", 
@@ -125,7 +126,9 @@ def create_eta_log(
 		"status_code": status_code,
 		"documents": documents or [],
 		"submission_status": submission_status,
-		"submission_summary": submission_summary
+		"submission_summary": submission_summary,
+		"pos_profile": pos_profile
+
 	}).insert()
 	return doc
 

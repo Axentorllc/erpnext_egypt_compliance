@@ -144,6 +144,7 @@ class EReceiptSubmitter:
         ]
         initial_eta_log = create_eta_log(
             from_doctype=doctype,
+			pos_profile=self.eta_connector.pos_profile,
             documents=documents,
             submission_summary=f"Total no of receipts: {len(ereceipts.get('receipts'))}"
         )
