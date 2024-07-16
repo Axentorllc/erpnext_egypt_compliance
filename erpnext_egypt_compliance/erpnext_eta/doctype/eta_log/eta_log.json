@@ -8,6 +8,7 @@
   "posting_date",
   "column_break_codv",
   "from_doctype",
+  "pos_profile",
   "response_details_section",
   "status_code",
   "eta_response",
@@ -17,7 +18,8 @@
   "submission_status",
   "submission_summary",
   "column_break_yzif",
-  "submission_id"
+  "submission_id",
+  "eta_submission_status"
  ],
  "fields": [
   {
@@ -96,11 +98,23 @@
    "fieldtype": "Code",
    "label": "ETA Response",
    "read_only": 1
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile"
+  },
+  {
+   "fieldname": "eta_submission_status",
+   "fieldtype": "Data",
+   "label": "ETA Submission Status",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-10 14:03:37.528395",
+ "modified": "2024-07-14 17:28:19.833977",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "ETA Log",
