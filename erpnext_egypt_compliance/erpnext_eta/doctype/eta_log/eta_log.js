@@ -16,14 +16,11 @@ frappe.ui.form.on("ETA Log", {
 				frm.call({
 					doc: frm.doc,
 					method: "get_submission_status",
-					args: {
-						submission_id: frm.doc.submission_id,
-						pos_profile: frm.doc.pos_profile,
-					},
 					freeze: true,
 					freeze_message: __("Getting Submission Details")
 					}).then((r) => {
 						if (!r.exc) {
+							frm.reload_doc();
 							frappe.show_alert({ message: __("Getting submission details done"), indicator: "green" });
 						}
 					});
@@ -38,13 +35,11 @@ frappe.ui.form.on("ETA Log", {
 				frm.call({
 					doc: frm.doc,
 					method: "update_receipts_status",
-					args: {
-						pos_profile: frm.doc.pos_profile,
-					},
 					freeze: true,
 					freeze_message: __("Updating Receipts Status")
 					}).then((r) => {
 						if (!r.exc) {
+							frm.reload_doc();
 							frappe.show_alert({ message: __("Updating receipts status done"), indicator: "green" });
 						}
 					});
