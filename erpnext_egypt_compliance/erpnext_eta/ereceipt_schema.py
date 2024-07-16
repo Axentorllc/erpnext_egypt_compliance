@@ -70,6 +70,10 @@ class SingleTaxTotal(BaseModel):
     taxType: str
     amount: float
 
+    @validator("amount")
+    def round_float_values(cls, value):
+        return frappe.utils.flt(value, 5)
+
 
 class SingleExtraReceiptDiscountData(BaseModel):
     amount: float
@@ -409,7 +413,6 @@ def submit_ereceipt(docname, pos_profile, doctype, raise_throw=True) -> None:
         if connector:
             eta_submitter = EReceiptSubmitter(connector)
             processed_docs = eta_submitter.submit_ereceipt(ereceipt.model_dump(), doctype)
-            # connector.submit_erecipt(, doctype)
     except Exception as e:
         frappe.log_error(title="Submit E-Receipt", message=e, reference_doctype="POS Invoice", reference_name=docname)
         if raise_throw:
