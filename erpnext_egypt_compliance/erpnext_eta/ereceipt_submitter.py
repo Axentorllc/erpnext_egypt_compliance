@@ -2,6 +2,7 @@ import frappe
 from erpnext_egypt_compliance.erpnext_eta.doctype.eta_pos_connector.eta_pos_connector import ETASession
 import json
 from erpnext_egypt_compliance.erpnext_eta.utils import create_eta_log
+import requests
 
 class EReceiptSubmitter:
     """
@@ -40,6 +41,45 @@ class EReceiptSubmitter:
         except Exception as e:
             self._handle_exception(e)
             return {"error": str(e)}
+    
+    def get_receipt_submission(self, submission_id):
+        """
+        Get the submission details from the ETA portal.
+        """
+        try:
+            access_token = self.eta_connector.get_access_token()
+            headers = self._get_headers()
+
+            url = f"{self.eta_connector.ETA_BASE}/receiptsubmissions/{submission_id}/details?PageNo=1&PageSize=100"
+            eta_session = ETASession().get_session()
+            eta_response = eta_session.get(url, headers=headers)
+            eta_response.raise_for_status()
+            eta_data = eta_response.json()
+
+            return eta_data
+
+        except requests.RequestException as e:
+            frappe.log_error(title="Get e-receipt submission", message=str(e))
+            return f"Error when Get e-receipt submission: {str(e)}"
+
+        except Exception as e:
+            frappe.log_error(title="Unexpected error in get_receipt_submission", message=str(e))
+    
+    def get_receipt_status(self, uuid):
+        try:
+            access_token = self.eta_connector.get_access_token()
+            headers = self._get_headers()
+
+            url = f"{self.eta_connector.ETA_BASE}/receipts/{uuid}/raw/"
+            eta_session = ETASession().get_session()
+            eta_response = eta_session.get(url, headers=headers)
+            eta_response.raise_for_status()
+            eta_data = eta_response.json()
+            return eta_data
+
+        except requests.RequestException as e:
+            frappe.log_error(title="Get e-receipt Status", message=str(e))
+            return f"Error when Get e-receipt status: {str(e)}"
 
     def _get_headers(self):
         """
@@ -163,4 +203,3 @@ class EReceiptSubmitter:
         """
         traceback = frappe.get_traceback()
         frappe.log_error("Submit E-Receipt", message=traceback)
-        # frappe.db.rollback()
