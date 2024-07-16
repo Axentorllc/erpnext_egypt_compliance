@@ -46,7 +46,7 @@ class ETAPOSConnector(Document):
 		headers = {
 			"content-type": "application/x-www-form-urlencoded",
 			"posserial": self.serial_number,
-			"pososversion": "windows",
+			"pososversion": self.pos_os_version,
 		}
 		response = eta_session.post(
 			self.ID_URL,

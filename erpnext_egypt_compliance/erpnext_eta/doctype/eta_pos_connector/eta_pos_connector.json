@@ -8,6 +8,7 @@
  "field_order": [
   "device_info_section",
   "pos_name",
+  "pos_os_version",
   "column_break_edep",
   "serial_number",
   "access_details_section",
@@ -92,11 +93,17 @@
    "in_list_view": 1,
    "label": "Environment",
    "options": "Pre-Production\nProduction"
+  },
+  {
+   "fieldname": "pos_os_version",
+   "fieldtype": "Data",
+   "label": "POS OS Version",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-04-13 18:34:13.761309",
+ "modified": "2024-07-16 16:33:12.786767",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "ETA POS Connector",
