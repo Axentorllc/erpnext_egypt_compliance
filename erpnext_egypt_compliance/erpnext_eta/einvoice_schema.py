@@ -74,7 +74,7 @@ class InvoiceLine(BaseModel):
 
     @validator("itemType")
     def item_type_must_be_one_of(cls, value, values):
-        allowed_types = ["GS1", "GS2"]
+        allowed_types = ["GS1", "EGS"]
         return validate_allowed_values(value, allowed_types)
 
     @validator("salesTotal", "netTotal")
@@ -345,8 +345,8 @@ def _get_item_taxable_items(_item_data: Dict):
                 continue
 
             item_wise_tax_detail_asjson = json.loads(tax.get("item_wise_tax_detail"))
-            items_tax_detail_list = ItemWiseTaxDetails(__root__=item_wise_tax_detail_asjson)
-            item_tax_detail = items_tax_detail_list.__root__.get(_item_data.get("item_code"))
+            items_tax_detail_list = ItemWiseTaxDetails(data=item_wise_tax_detail_asjson)
+            item_tax_detail = items_tax_detail_list.data.get(_item_data.get("item_code"))
 
             # default values
             tax_type = tax.get("eta_tax_type")
@@ -414,10 +414,10 @@ def _get_item_unit_value(_item_data: Dict):
     amount_egp = _unit_price
 
     amount_sold = (
-        _item_data.get("rate") if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else None
+        _item_data.get("rate") if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else _item_data.get("rate")
     )
     currency_exchange_rate = (
-        _exchange_rate if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else None
+        _exchange_rate if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else INVOICE_RAW_DATA.get("conversion_rate")
     )
 
     return Value(
@@ -431,7 +431,7 @@ def _get_item_unit_value(_item_data: Dict):
 def _get_item_code_and_type(_item_data: Dict):
     # default item code and type
     _code = _item_data.get("eta_item_code") or frappe.get_value("ETA Settings", "ETA Settings", "eta_item_code")
-    _type = _item_data.get("eta_code_type", "EGS")
+    _type = _item_data.get("eta_code_type", "GS1")
 
     if _item_data.get("eta_inherit_brand"):
         _code = frappe.get_value("Brand", _item_data.get("brand"), "eta_item_code")

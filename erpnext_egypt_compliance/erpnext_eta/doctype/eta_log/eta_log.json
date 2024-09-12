@@ -1,0 +1,139 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-07-03 15:05:35.974284",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "posting_date",
+  "column_break_codv",
+  "from_doctype",
+  "pos_profile",
+  "response_details_section",
+  "status_code",
+  "eta_response",
+  "section_break_fnmm",
+  "documents",
+  "submission_summary_section",
+  "submission_status",
+  "submission_summary",
+  "column_break_yzif",
+  "submission_id",
+  "eta_submission_status"
+ ],
+ "fields": [
+  {
+   "fieldname": "response_details_section",
+   "fieldtype": "Section Break",
+   "label": "Response Details"
+  },
+  {
+   "fieldname": "status_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "submission_summary_section",
+   "fieldtype": "Section Break",
+   "label": "Submission Summary"
+  },
+  {
+   "fieldname": "submission_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Submission Status",
+   "options": "Started\nPartially Succeeded\nFailed\nCompleted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "submission_summary",
+   "fieldtype": "Small Text",
+   "label": "Submission Summary",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_fnmm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "documents",
+   "fieldtype": "Table",
+   "label": "Documents",
+   "options": "ETA Log Documents"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_yzif",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "submission_id",
+   "fieldtype": "Data",
+   "label": "Submission ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_codv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "from_doctype",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "From Doctype",
+   "options": "POS Invoice\nSales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "eta_response",
+   "fieldtype": "Code",
+   "label": "ETA Response",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile"
+  },
+  {
+   "fieldname": "eta_submission_status",
+   "fieldtype": "Data",
+   "label": "ETA Submission Status",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-07-14 17:28:19.833977",
+ "modified_by": "Administrator",
+ "module": "ERPNext ETA",
+ "name": "ETA Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
