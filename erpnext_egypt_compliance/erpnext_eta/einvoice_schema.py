@@ -217,7 +217,7 @@ def get_invoice_asjson(docname: str):
     issuer = get_issuer()
     receiver = get_receiver()
     document_type = "C" if INVOICE_RAW_DATA.get("is_return") else "I"
-    document_type_version = "1.0"
+    document_type_version = "1.0" if INVOICE_RAW_DATA.eta_signature else "0.9"
     date_time_issued = INVOICE_RAW_DATA.get("posting_date")
     taxpayer_activity_code = COMPANY_DATA.get("eta_default_activity_code")
     internal_id = INVOICE_RAW_DATA.get("name")
