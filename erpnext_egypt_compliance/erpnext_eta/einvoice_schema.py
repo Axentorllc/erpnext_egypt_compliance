@@ -19,7 +19,7 @@ COMPANY_DATA = {}
 
 
 class Signature(BaseModel):
-    type: str = Field(default="I")
+    signatureType: str = Field(default="I")
     value: str = Field(...)
 
 
@@ -547,7 +547,7 @@ def get_tax_totals(invoice_lines):
 def get_signatures():
     return [
         Signature(
-            type="I",
+            signatureType="I",
             value=INVOICE_RAW_DATA.get("eta_signature") if INVOICE_RAW_DATA.get("eta_signature") else "ANY",
         )
     ]
