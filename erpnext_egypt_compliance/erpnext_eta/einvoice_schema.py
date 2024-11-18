@@ -179,7 +179,7 @@ class Invoice(BaseModel):
     documentTypeVersion: str = Field(default="1.0")
     dateTimeIssued: str = Field(...)
     taxpayerActivityCode: str = Field(...)
-    internalId: str = Field(...)
+    internalID: str = Field(...)
     invoiceLines: List[InvoiceLine]
     totalDiscountAmount: Optional[float] = Field(default=0.0)
     totalSalesAmount: float = Field(default=0.0)
@@ -235,7 +235,7 @@ def get_invoice_asjson(docname: str):
         documentTypeVersion=document_type_version,
         dateTimeIssued=date_time_issued,
         taxpayerActivityCode=taxpayer_activity_code,
-        internalId=internal_id,
+        internalID=internal_id,
         invoiceLines=invoice_lines,
         totalDiscountAmount=total_discount_amount,
         extraDiscountAmount=0.0,
