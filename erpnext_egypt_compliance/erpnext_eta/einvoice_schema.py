@@ -13,7 +13,7 @@ from erpnext_egypt_compliance.erpnext_eta.utils import (
     eta_round,
 )
 from erpnext_egypt_compliance.erpnext_eta.ereceipt_schema import ItemWiseTaxDetails
-
+from erpnext_egypt_compliance.erpnext_eta.legacy_einvoice import _abs_values
 INVOICE_RAW_DATA = {}
 COMPANY_DATA = {}
 
@@ -210,7 +210,7 @@ class Invoice(BaseModel):
         return json.dumps(self.dict(exclude_none=True, exclude_unset=True), **kwargs)
 
 
-def get_invoice_asjson(docname: str):
+def get_invoice_asjson(docname: str, as_dict: bool=False):
     # Get the raw data from the database
     set_global_raw_data(docname)
 
@@ -247,7 +247,7 @@ def get_invoice_asjson(docname: str):
         signatures=signatures,
     )
 
-    return invoice.json(indent=4, ensure_ascii=False)
+    return invoice.json(indent=4, ensure_ascii=False) if not as_dict else _abs_values(invoice.model_dump(exclude_none=True, exclude_unset=True))
 
 
 def set_global_raw_data(docname: str) -> None:
