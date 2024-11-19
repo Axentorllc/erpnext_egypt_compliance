@@ -33,7 +33,7 @@ def download_eta_inv_json(docname):
 def fetch_eta_status(docname):
     is_pydantic_builder_enabled = frappe.db.get_single_value("ETA Settings", "pydantic_builder")
     if is_pydantic_builder_enabled:
-        pass
+        return fetch_eta_status_legacy(docname)
     else:
         return fetch_eta_status_legacy(docname)
 
