@@ -414,18 +414,22 @@ def _get_item_unit_value(_item_data: Dict):
     amount_egp = _unit_price
 
     amount_sold = (
-        _item_data.get("rate") if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else _item_data.get("rate")
+        _item_data.get("rate") if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else 0.0
     )
     currency_exchange_rate = (
-        _exchange_rate if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else INVOICE_RAW_DATA.get("conversion_rate")
+        _exchange_rate if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else 0.0
     )
 
-    return Value(
+    value = Value(
         currencySold=currency_sold,
         amountEGP=amount_egp,
-        amountSold=amount_sold,
-        currencyExchangeRate=currency_exchange_rate,
     )
+
+    if amount_sold or currency_exchange_rate:
+        value.amountSold = amount_sold
+        value.currencyExchangeRate = currency_exchange_rate
+
+    return value
 
 
 def _get_item_code_and_type(_item_data: Dict):
