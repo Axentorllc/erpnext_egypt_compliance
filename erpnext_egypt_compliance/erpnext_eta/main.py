@@ -42,6 +42,7 @@ def fetch_eta_status(docname):
 def submit_eta_invoice(docname):
     is_pydantic_builder_enabled = frappe.db.get_single_value("ETA Settings", "pydantic_builder")
     if is_pydantic_builder_enabled:
-        pass
+        inv = get_invoice_asjson(docname, as_dict=True)
+        return submit_eta_invoice_legacy(docname, inv)
     else:
         return submit_eta_invoice_legacy(docname)
