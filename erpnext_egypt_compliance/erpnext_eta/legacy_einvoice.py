@@ -12,8 +12,11 @@ def fetch_eta_status(docname):
     return connector.update_eta_docstatus(docname)
 
 
-def submit_eta_invoice(docname):
-    inv = get_eta_invoice(docname)
+def submit_eta_invoice(docname, inv=None):
+
+    if not inv:
+        inv = get_eta_invoice(docname)
+
     sinv_doc_company = frappe.get_value("Sales Invoice", docname, "company")
     connector = get_company_eta_connector(sinv_doc_company)
     response = connector.submit_eta_documents(inv)

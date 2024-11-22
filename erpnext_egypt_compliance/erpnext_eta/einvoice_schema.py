@@ -13,13 +13,13 @@ from erpnext_egypt_compliance.erpnext_eta.utils import (
     eta_round,
 )
 from erpnext_egypt_compliance.erpnext_eta.ereceipt_schema import ItemWiseTaxDetails
-
+from erpnext_egypt_compliance.erpnext_eta.legacy_einvoice import _abs_values
 INVOICE_RAW_DATA = {}
 COMPANY_DATA = {}
 
 
 class Signature(BaseModel):
-    type: str = Field(default="I")
+    signatureType: str = Field(default="I")
     value: str = Field(...)
 
 
@@ -179,7 +179,7 @@ class Invoice(BaseModel):
     documentTypeVersion: str = Field(default="1.0")
     dateTimeIssued: str = Field(...)
     taxpayerActivityCode: str = Field(...)
-    internalId: str = Field(...)
+    internalID: str = Field(...)
     invoiceLines: List[InvoiceLine]
     totalDiscountAmount: Optional[float] = Field(default=0.0)
     totalSalesAmount: float = Field(default=0.0)
@@ -210,14 +210,14 @@ class Invoice(BaseModel):
         return json.dumps(self.dict(exclude_none=True, exclude_unset=True), **kwargs)
 
 
-def get_invoice_asjson(docname: str):
+def get_invoice_asjson(docname: str, as_dict: bool=False):
     # Get the raw data from the database
     set_global_raw_data(docname)
 
     issuer = get_issuer()
     receiver = get_receiver()
     document_type = "C" if INVOICE_RAW_DATA.get("is_return") else "I"
-    document_type_version = "1.0"
+    document_type_version = "1.0" if INVOICE_RAW_DATA.eta_signature else "0.9"
     date_time_issued = INVOICE_RAW_DATA.get("posting_date")
     taxpayer_activity_code = COMPANY_DATA.get("eta_default_activity_code")
     internal_id = INVOICE_RAW_DATA.get("name")
@@ -235,7 +235,7 @@ def get_invoice_asjson(docname: str):
         documentTypeVersion=document_type_version,
         dateTimeIssued=date_time_issued,
         taxpayerActivityCode=taxpayer_activity_code,
-        internalId=internal_id,
+        internalID=internal_id,
         invoiceLines=invoice_lines,
         totalDiscountAmount=total_discount_amount,
         extraDiscountAmount=0.0,
@@ -247,7 +247,7 @@ def get_invoice_asjson(docname: str):
         signatures=signatures,
     )
 
-    return invoice.json(indent=4, ensure_ascii=False)
+    return invoice.json(indent=4, ensure_ascii=False) if not as_dict else _abs_values(invoice.model_dump(exclude_none=True, exclude_unset=True))
 
 
 def set_global_raw_data(docname: str) -> None:
@@ -414,18 +414,22 @@ def _get_item_unit_value(_item_data: Dict):
     amount_egp = _unit_price
 
     amount_sold = (
-        _item_data.get("rate") if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else _item_data.get("rate")
+        _item_data.get("rate") if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else 0.0
     )
     currency_exchange_rate = (
-        _exchange_rate if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else INVOICE_RAW_DATA.get("conversion_rate")
+        _exchange_rate if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else 0.0
     )
 
-    return Value(
+    value = Value(
         currencySold=currency_sold,
         amountEGP=amount_egp,
-        amountSold=amount_sold,
-        currencyExchangeRate=currency_exchange_rate,
     )
+
+    if amount_sold or currency_exchange_rate:
+        value.amountSold = amount_sold
+        value.currencyExchangeRate = currency_exchange_rate
+
+    return value
 
 
 def _get_item_code_and_type(_item_data: Dict):
@@ -547,7 +551,7 @@ def get_tax_totals(invoice_lines):
 def get_signatures():
     return [
         Signature(
-            type="I",
+            signatureType="I",
             value=INVOICE_RAW_DATA.get("eta_signature") if INVOICE_RAW_DATA.get("eta_signature") else "ANY",
         )
     ]
