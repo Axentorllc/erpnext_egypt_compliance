@@ -7,6 +7,7 @@ import requests
 import json
 from datetime import datetime
 from erpnext_egypt_compliance.erpnext_eta.legacy_einvoice import get_eta_invoice, get_eta_inv_datetime_diff
+from erpnext_egypt_compliance.erpnext_eta.doctype.eta_pos_connector.eta_pos_connector import ETASession
 
 
 class ETAConnector(Document):
@@ -26,10 +27,10 @@ class ETAConnector(Document):
 
         self.DOCUMET_SUBMISSION = self.ETA_BASE + "/documentsubmissions"
         self.DOCUMENT_TYPES = self.ETA_BASE + "/documenttypes"
+        self.session = ETASession()
 
     def get_eta_access_token(self):
-        # eta_token = frappe.get_doc(
-        # 	"ETA Company Setting", "HCH Supply For Import & Export LTD-Pre-Production")
+
         if self.access_token:
             access_token = self.get_password(fieldname="access_token")
         else:
@@ -43,7 +44,7 @@ class ETAConnector(Document):
     def refresh_eta_token(self):
         headers = {"content-type": "application/x-www-form-urlencoded"}
 
-        response = requests.post(
+        response = self.session.post(
             self.ID_URL,
             data={
                 "grant_type": "client_credentials",
@@ -72,7 +73,7 @@ class ETAConnector(Document):
         headers = self.get_headers()
         data = {"documents": eta_invoice}
         data = json.dumps(data, ensure_ascii=False).encode("utf8")
-        eta_response = requests.post(self.DOCUMET_SUBMISSION, data=data, headers=headers)
+        eta_response = self.session.post(self.DOCUMET_SUBMISSION, data=data, headers=headers)
         eta_response = frappe._dict(eta_response.json())
         if eta_response.get("acceptedDocuments"):
             for doc in eta_response.get("acceptedDocuments"):
@@ -90,7 +91,7 @@ class ETAConnector(Document):
         headers = self.get_headers()
         uuid = frappe.get_value("Sales Invoice", docname, "eta_uuid")
         UUID_PATH = self.ETA_BASE + f"/documents/{uuid}/raw"
-        eta_response = requests.get(UUID_PATH, headers=headers)
+        eta_response = self.session.get(UUID_PATH, headers=headers)
         if eta_response.ok:
             eta_response = eta_response.json()
             frappe.db.set_value(
@@ -102,7 +103,7 @@ class ETAConnector(Document):
     def get_document_type(self, doc_id=""):
         headers = self.get_headers()
         _path = self.DOCUMENT_TYPES + f"/{doc_id}"
-        eta_response = requests.get(_path, headers=headers)
+        eta_response = self.session.get(_path, headers=headers)
         print(eta_response.text)
 
     def submit_signed_invoices(self):
