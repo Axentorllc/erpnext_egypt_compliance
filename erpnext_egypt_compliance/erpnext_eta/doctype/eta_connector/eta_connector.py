@@ -41,9 +41,8 @@ class ETAConnector(Document):
         )
 
     def refresh_eta_token(self):
-        # URL = self.PRE_PROD_ID_URL
         headers = {"content-type": "application/x-www-form-urlencoded"}
-        # eta_token = frappe.get_doc(
+
         response = requests.post(
             self.ID_URL,
             data={
@@ -63,12 +62,15 @@ class ETAConnector(Document):
                 frappe.db.commit()
                 return eta_response.get("access_token")
 
-    def submit_eta_documents(self, eta_invoice):
-        headers = {
+    def get_headers(self):
+        return {
             "content-type": "application/json; charset=utf-8",
             "Authorization": "Bearer " + self.get_eta_access_token(),
         }
-        data = {"documents": [eta_invoice]}
+
+    def submit_eta_documents(self, eta_invoice):
+        headers = self.get_headers()
+        data = {"documents": eta_invoice}
         data = json.dumps(data, ensure_ascii=False).encode("utf8")
         eta_response = requests.post(self.DOCUMET_SUBMISSION, data=data, headers=headers)
         eta_response = frappe._dict(eta_response.json())
@@ -85,10 +87,7 @@ class ETAConnector(Document):
         return eta_response
 
     def update_eta_docstatus(self, docname):
-        headers = {
-            "content-type": "application/json;charset=utf-8",
-            "Authorization": "Bearer " + self.get_eta_access_token(),
-        }
+        headers = self.get_headers()
         uuid = frappe.get_value("Sales Invoice", docname, "eta_uuid")
         UUID_PATH = self.ETA_BASE + f"/documents/{uuid}/raw"
         eta_response = requests.get(UUID_PATH, headers=headers)
@@ -101,10 +100,7 @@ class ETAConnector(Document):
         return "Didn't update Status"
 
     def get_document_type(self, doc_id=""):
-        headers = {
-            "content-type": "application/json; charset=utf-8",
-            "Authorization": "Bearer " + self.get_eta_access_token(),
-        }
+        headers = self.get_headers()
         _path = self.DOCUMENT_TYPES + f"/{doc_id}"
         eta_response = requests.get(_path, headers=headers)
         print(eta_response.text)
