@@ -71,7 +71,7 @@ class ETAConnector(Document):
 
     def submit_eta_documents(self, eta_invoice):
         headers = self.get_headers()
-        data = {"documents": eta_invoice}
+        data = {"documents": [eta_invoice]}
         data = json.dumps(data, ensure_ascii=False).encode("utf8")
         eta_response = self.session.post(self.DOCUMET_SUBMISSION, data=data, headers=headers)
         eta_response = frappe._dict(eta_response.json())
