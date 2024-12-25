@@ -27,7 +27,7 @@ class ETAConnector(Document):
 
         self.DOCUMET_SUBMISSION = self.ETA_BASE + "/documentsubmissions"
         self.DOCUMENT_TYPES = self.ETA_BASE + "/documenttypes"
-        self.session = ETASession()
+        self.session = ETASession().get_session()
 
     def get_eta_access_token(self):
 
