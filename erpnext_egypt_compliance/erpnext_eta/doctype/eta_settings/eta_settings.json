@@ -6,18 +6,14 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "integration_enabled_section",
   "defaults_section",
   "eta_item_code",
   "column_break_4",
   "eta_uom",
-  "pydantic_builder"
+  "pydantic_builder",
+  "enable_eta_log"
  ],
  "fields": [
-  {
-   "fieldname": "integration_enabled_section",
-   "fieldtype": "Section Break"
-  },
   {
    "fieldname": "defaults_section",
    "fieldtype": "Section Break",
@@ -43,12 +39,19 @@
    "fieldname": "pydantic_builder",
    "fieldtype": "Check",
    "label": "Pydantic Builder"
+  },
+  {
+   "default": "0",
+   "description": "if enabled, submitting an invoice to the ETA Portal system will automatically create an <b>ETA Log</b> document, allowing you to track the submission status and details.",
+   "fieldname": "enable_eta_log",
+   "fieldtype": "Check",
+   "label": "Enable ETA Log"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-08-07 12:54:33.362762",
+ "modified": "2024-12-25 13:37:24.570679",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "ETA Settings",
