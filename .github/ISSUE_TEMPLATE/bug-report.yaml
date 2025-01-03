@@ -1,0 +1,84 @@
+name: "🐞 Bug Report"
+description: Report issues or request enhancements related to the ERPNext Egypt Compliance.
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        🙏 Thank you for taking the time to report an issue or request an enhancement for the ERPNext Egypt Compliance. Please fill out the form below to help us understand and address the issue effectively.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 📝 Issue Summary
+      description: Provide a concise description of the issue.
+      placeholder: "e.g., Incorrect VAT calculation on invoice generation"
+    validations:
+      required: true
+      
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: 🔄 Steps to Reproduce (if applicable)
+      description: Describe the steps to reproduce the issue.
+      placeholder: |
+        1. Go to the invoice list view...
+        2. Enter invoice details...
+        3. Observe the issue with VAT calculation...
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: 🤔 Expected Behavior
+      description: Describe what you expected to happen.
+      placeholder: "e.g., The VAT should be calculated as per current Egyptian regulations."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: 🚨 Actual Behavior
+      description: Describe what actually happened.
+      placeholder: "e.g., The VAT calculation is incorrect or missing."
+    validations:
+      required: true
+
+  - type: textarea
+    id: app_versions
+    attributes:
+      label: 🛠️ Version
+      description: Share the exact version numbers of Frappe and ERPNext you are using. To find your app versions, refer to [How to Get the App Version](https://discuss.frappe.io/t/how-to-find-out-the-application-version-in-erpnext/62648) or run `bench version` in your bench directory.
+      placeholder: |
+        Frappe version - v15.#.#
+        ERPNext version - v15.#.#
+    validations:
+      required: true
+
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: 🔧 Installation Method
+      description: Select the method used to install Frappe/ERPNext.
+      options:
+        - docker
+        - easy-install
+        - manual install
+        - FrappeCloud
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_information
+    attributes:
+      label: 📝 Additional Information
+      description: Add any other context about the issue (e.g., logs, screenshots, configurations, relevant regulations).
+      placeholder: "Attach logs, screenshots, or additional context."
+    validations:
+      required: false
