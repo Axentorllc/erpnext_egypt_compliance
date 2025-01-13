@@ -17,9 +17,9 @@ doctype_js = {
 }
 
 doc_events = {
-    "Sales Invoice": {
-        "before_submit": "erpnext_egypt_compliance.erpnext_eta.utils.before_submit_validate_eta_invoice",
-    },
+    # "Sales Invoice": {
+        # "before_submit": "erpnext_egypt_compliance.erpnext_eta.utils.before_submit_validate_eta_invoice",
+    # },
 }
 
 
