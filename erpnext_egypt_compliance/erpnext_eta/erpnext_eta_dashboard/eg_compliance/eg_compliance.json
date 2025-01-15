@@ -1,0 +1,37 @@
+{
+ "cards": [
+  {
+   "card": "Submitted Invoices"
+  },
+  {
+   "card": "Valid Invoices"
+  },
+  {
+   "card": "Invalid Invoices"
+  },
+  {
+   "card": "Rejected Invoices"
+  },
+  {
+   "card": "Cancelled Invoices"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "ETA Integration Statistics",
+   "width": "Full"
+  }
+ ],
+ "creation": "2025-01-13 20:45:39.426066",
+ "dashboard_name": "EG Compliance",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2025-01-14 14:16:35.565367",
+ "modified_by": "Administrator",
+ "module": "ERPNext ETA",
+ "name": "EG Compliance",
+ "owner": "Administrator"
+}

@@ -1,0 +1,275 @@
+{
+ "charts": [
+  {
+   "chart_name": "ETA Integration Statistics",
+   "label": "ETA Integration Insights"
+  }
+ ],
+ "content": "[{\"id\":\"Td8HGfv4D_\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">EG Compliance</span>\",\"col\":12}},{\"id\":\"8VdlD3BoNU\",\"type\":\"chart\",\"data\":{\"chart_name\":\"ETA Integration Insights\",\"col\":12}},{\"id\":\"l8t_-lTcd2\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Submitted Invoices\",\"col\":3}},{\"id\":\"C0C3uSilro\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Valid Invoices\",\"col\":3}},{\"id\":\"OusvlX0MEy\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Invalid Invoices\",\"col\":3}},{\"id\":\"FtZg94ss1H\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Rejected Invoices\",\"col\":3}},{\"id\":\"fTudJ-WWYx\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Cancelled\",\"col\":3}},{\"id\":\"qMSSmcYqit\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"r7lPmH0Ek_\",\"type\":\"card\",\"data\":{\"card_name\":\"Transactions\",\"col\":4}},{\"id\":\"fUdWgCXJf_\",\"type\":\"card\",\"data\":{\"card_name\":\"Integration Log\",\"col\":4}},{\"id\":\"jhlsSCmiT0\",\"type\":\"card\",\"data\":{\"card_name\":\"ETA Connector\",\"col\":4}},{\"id\":\"aa1PC49IZA\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"qILrz2wL1u\",\"type\":\"card\",\"data\":{\"card_name\":\"Master Data\",\"col\":4}},{\"id\":\"889CLF6TO9\",\"type\":\"card\",\"data\":{\"card_name\":\"ETA Item Codes\",\"col\":4}},{\"id\":\"3yZP_zGJJb\",\"type\":\"card\",\"data\":{\"card_name\":\"ETA Master Data\",\"col\":4}},{\"id\":\"Ik0VbaVxKz\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}},{\"id\":\"3kC26YzjaO\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"gpvSR3Fe7-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Support Tickets\",\"col\":4}},{\"id\":\"VR5-Z7Mdg1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Documentation\",\"col\":4}},{\"id\":\"zQDppRgA2p\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
+ "creation": "2025-01-14 13:47:28.154035",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "external-link",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "EG Compliance",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA Item Codes",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Item",
+   "link_count": 0,
+   "link_to": "Item",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Item Group",
+   "link_count": 0,
+   "link_to": "Item Group",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Brand",
+   "link_count": 0,
+   "link_to": "Brand",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Master Data",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Company",
+   "link_count": 0,
+   "link_to": "Company",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sales Taxes and Charges Template",
+   "link_count": 0,
+   "link_to": "Sales Taxes and Charges Template",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Transactions",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sales Invoice",
+   "link_count": 0,
+   "link_to": "Sales Invoice",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Invoice",
+   "link_count": 0,
+   "link_to": "POS Invoice",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Integration Log",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA Log",
+   "link_count": 0,
+   "link_to": "ETA Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA Connector",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA Connector",
+   "link_count": 0,
+   "link_to": "ETA Connector",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA POS Connector",
+   "link_count": 0,
+   "link_to": "ETA POS Connector",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "description": "ETA preloaded data",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA Master Data",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA Activity Code",
+   "link_count": 0,
+   "link_to": "ETA Activity Code",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA Tax Type",
+   "link_count": 0,
+   "link_to": "ETA Tax Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA UOM",
+   "link_count": 0,
+   "link_to": "ETA UOM",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "ETA Sales Invoices Status",
+   "link_count": 0,
+   "link_to": "ETA Sales Invoices Status",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2025-01-14 14:34:06.826753",
+ "modified_by": "Administrator",
+ "module": "ERPNext ETA",
+ "name": "EG Compliance",
+ "number_cards": [
+  {
+   "label": "Submitted Invoices",
+   "number_card_name": "Submitted Invoices"
+  },
+  {
+   "label": "Valid Invoices",
+   "number_card_name": "Valid Invoices"
+  },
+  {
+   "label": "Rejected Invoices",
+   "number_card_name": "Rejected Invoices"
+  },
+  {
+   "label": "Cancelled",
+   "number_card_name": "Cancelled Invoices"
+  },
+  {
+   "label": "Invalid Invoices",
+   "number_card_name": "Invalid Invoices"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 2.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Support Tickets",
+   "type": "URL",
+   "url": "https://support.axentor.app"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Documentation",
+   "type": "URL",
+   "url": "https://docs.axentor.app"
+  }
+ ],
+ "title": "EG Compliance"
+}
