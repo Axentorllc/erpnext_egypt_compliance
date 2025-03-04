@@ -9,6 +9,7 @@ frappe.ui.form.on('Sales Invoice', {
 		frm.trigger('eta_add_status_indicator');
 		frm.trigger('eta_add_download_e_receipt_button')
 		frm.trigger('eta_submit_ereceipt')
+		frm.trigger('eta_add_download_pdf_button');
 	},
 	refresh(frm) {
 	},
@@ -147,42 +148,42 @@ frappe.ui.form.on('Sales Invoice', {
 		}, "eReceipt")
 	},
 	eta_add_download_pdf_button(frm) {
-        frm.add_custom_button('Download PDF', () => {
-            if (!frm.doc.eta_uuid) {
-                frappe.msgprint('No UUID found for this document. Cannot download PDF.');
-                return;
-            }
-    
-            var url = frappe.urllib.get_base_url() + '/api/method/erpnext_egypt_compliance.erpnext_eta.main.download_eta_pdf?docname=' + encodeURIComponent(frm.doc.name);
-            $.ajax({
-                url: url,
-                type: 'GET',
-                success: function (result) {
-                    if (jQuery.isEmptyObject(result)) {
-                        frappe.msgprint('Failed to load ETA PDF document.');
-                    } else {
-                        window.location = url;
-                    }
-                    if (result.exc) {
-                        console.log(result.exc);
-                    }
-                },
-                error: (r) => {
-                    if (r.responseJSON && r.responseJSON._server_messages) {
-                        var server_messages = jQuery.parseJSON(r.responseJSON._server_messages);
-                        var object = JSON.parse(server_messages);
-                        frappe.throw({
-                            message: object.message,
-                            title: object.title
-                        });
-                    } else {
-                        frappe.throw({
-                            message: 'Failed to download PDF. Please try again.',
-                            title: 'Error'
-                        });
-                    }
-                }
-            });
-        }, "PDF");
-    },
+		// Create button with proper name as suggested
+		let btn = frm.add_custom_button('Download ETA PDF', () => {
+			var url = frappe.urllib.get_base_url() + '/api/method/erpnext_egypt_compliance.erpnext_eta.main.download_eta_pdf?docname=' + encodeURIComponent(frm.doc.name);
+			$.ajax({
+				url: url,
+				type: 'GET',
+				success: function (result) {
+					if (jQuery.isEmptyObject(result)) {
+						frappe.msgprint('Failed to load ETA PDF document.');
+					} else {
+						window.location = url;
+					}
+					if (result.exc) {
+						console.log(result.exc);
+					}
+				},
+				error: (r) => {
+					if (r.responseJSON && r.responseJSON._server_messages) {
+						var server_messages = jQuery.parseJSON(r.responseJSON._server_messages);
+						var object = JSON.parse(server_messages);
+						frappe.throw({
+							message: object.message,
+							title: object.title
+						});
+					} else {
+						frappe.throw({
+							message: 'Failed to download PDF. Please try again.',
+							title: 'Error'
+						});
+					}
+				}
+			});
+		},"{PDF}");
+		
+		if (!frm.doc.eta_uuid) {
+			btn.addClass('disabled');
+		}
+	},
 })
