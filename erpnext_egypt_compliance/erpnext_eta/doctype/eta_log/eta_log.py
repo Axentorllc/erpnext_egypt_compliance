@@ -2,10 +2,12 @@
 # For license information, please see license.txt
 
 import frappe
+import requests
 from frappe.model.document import Document
 from erpnext_egypt_compliance.erpnext_eta.utils import parse_error_details
 from erpnext_egypt_compliance.erpnext_eta.ereceipt_submitter import EReceiptSubmitter
 import json
+from erpnext_egypt_compliance.erpnext_eta.doctype.eta_pos_connector.eta_pos_connector import ETASession
 
 
 class ETALog(Document):
@@ -134,3 +136,105 @@ class ETALog(Document):
                     receipt_status = eta_response["receipt"]["status"]
                     frappe.db.set_value(doc.reference_doctype, doc.reference_document, fieldname, receipt_status)
                     doc.db_set("eta_status", receipt_status)
+
+
+    @frappe.whitelist()
+    def update_documents_status(self, connector):
+        # Check and update document statuses from ETA submission details
+        if not self.submission_id:
+            frappe.throw("Submission ID is required to check status")
+
+        #connector = frappe.get_doc("ETA Connector", self.custom_connector)
+        
+        submission_response = self._get_submission_details(connector)
+        
+        if not submission_response:
+            frappe.msgprint('no submission response')
+            return
+            
+        self._update_documents_from_submission(submission_response)
+        frappe.msgprint('updated documents')
+        self.save()
+
+    def _get_submission_details(self, connector):
+        # Fetch document submission details from ETA API
+        page_no = len(self.documents)
+        try:
+            headers = {
+                "Authorization": f"Bearer " + connector.get_eta_access_token(),
+                "PageSize": "1",
+                "PageNo": str(page_no)
+            }
+            
+            url = f"{connector.ETA_BASE}/documentSubmissions/{self.submission_id}"
+            eta_session = ETASession().get_session()
+            response = eta_session.get(url, headers=headers)
+
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return
+                
+        except requests.RequestException as e:            
+            frappe.throw(str(e))
+
+    def _update_documents_from_submission(self, submission_response):
+        # Map internal IDs to their document details
+        document_map = {
+            doc.get("internalId"): doc 
+            for doc in submission_response.get("documentSummary", [])
+        }
+        
+        # a dictionary to count document statuses
+        status_counts = {
+            "Submitted": 0,
+            "Valid": 0,
+            "Invalid": 0,
+            "Rejected": 0,
+            "Cancelled": 0
+        }
+        
+        for doc_row in self.documents:
+            eta_doc = document_map.get(doc_row.reference_document)
+            if not eta_doc:
+                continue
+            
+            # Update the status count
+            status = eta_doc.get("status")
+            if status in status_counts:
+                status_counts[status] += 1
+            
+            doc_row.update({
+                "uuid": eta_doc.get("uuid"),
+                "eta_status": eta_doc.get("status"),
+                "long_id": eta_doc.get("longId"), 
+                "accepted": eta_doc.get("status") == "Valid",
+                "custom_eta_public_url": eta_doc.get("publicUrl"),
+                "error": eta_doc.get("documentStatusReason") if eta_doc.get("documentStatusReason") else ""
+            })
+        
+        # Map ETA status to internal submission status
+        self.submission_status = {
+            "Valid": "Completed",
+            "Partially Valid": "Partially Succeeded", 
+            "In Progress": "Started",
+            "Invalid": "Failed"
+        }.get(submission_response.get("overallStatus"))
+        
+        metadata = submission_response.get("metadata", {})
+        
+        summary = [
+            f"Total Documents: {metadata.get('totalCount', 0)}",
+            f"Submitted: {status_counts['submitted']}",
+            f"Valid Documents: {status_counts['valid']}",
+            f"Invalid Documents: {status_counts['invalid']}",
+            f"Rejected: {status_counts['rejected']}",
+            f"Cancelled: {status_counts['cancelled']}",
+            f"Submission Date: {submission_response.get('dateTimeReceived')}",
+            f"Submission ID: {submission_response.get('submissionid')}"
+        ]
+        
+        self.submission_summary = "\n".join(summary)
+        
+        # Store full response
+        self.eta_response = json.dumps(submission_response, indent=4)
