@@ -33,14 +33,22 @@ def get_invoice_names_to_sign(company):
 
 @frappe.whitelist()
 def get_eta_invoice_for_signer(docname):
-    frappe.set_value("Sales Invoice", docname, "eta_signature_date", datetime.today())
-    frappe.set_value("Sales Invoice", docname, "eta_signature_time", datetime.now())
-    frappe.db.commit()
+    try:
+        frappe.set_value("Sales Invoice", docname, "eta_signature_date", datetime.today())
+        frappe.set_value("Sales Invoice", docname, "eta_signature_time", datetime.now())
+        frappe.db.commit()
 
-    inv = get_invoice_asjson(docname, as_dict=True)
-    inv.pop("signatures")
-    inv.documentTypeVersion = "1.0"
-    return inv
+        inv = get_invoice_asjson(docname, as_dict=True)
+        inv.pop("signatures")
+        inv["documentTypeVersion"] = "1.0"
+        return inv
+    except Exception as e:
+        trace = frappe.get_traceback()
+        frappe.log_error(
+            title=f"Failed to get ETA Invoice for signer {docname}",
+            message=trace,
+        )
+        return {"error": f"Failed to get ETA Invoice {str(e)}"}
 
 
 @frappe.whitelist()
