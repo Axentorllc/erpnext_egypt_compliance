@@ -7,7 +7,7 @@ from frappe.model.document import Document
 from erpnext_egypt_compliance.erpnext_eta.utils import parse_error_details
 from erpnext_egypt_compliance.erpnext_eta.ereceipt_submitter import EReceiptSubmitter
 import json
-from erpnext_egypt_compliance.erpnext_eta.doctype.eta_pos_connector.eta_pos_connector import ETASession
+from erpnext_egypt_compliance.erpnext_eta.utils import get_company_eta_connector
 
 
 class ETALog(Document):
@@ -144,8 +144,10 @@ class ETALog(Document):
         if not self.submission_id:
             frappe.throw("Submission ID is required to check status")
 
-        #connector = frappe.get_doc("ETA Connector", self.custom_connector)
-        
+        # Retrieve the connector from the first document in the child table
+        sinv_doc_company = frappe.get_value("Sales Invoice", self.documents[0], "company")
+        connector = get_company_eta_connector(sinv_doc_company)
+
         submission_response = self._get_submission_details(connector)
         
         if not submission_response:
@@ -167,13 +169,11 @@ class ETALog(Document):
             }
             
             url = f"{connector.ETA_BASE}/documentSubmissions/{self.submission_id}"
-            eta_session = ETASession().get_session()
-            response = eta_session.get(url, headers=headers)
+            # use connector initializer
+            response = connector.session.get(url, headers=headers)
 
             if response.status_code == 200:
                 return response.json()
-            else:
-                return
                 
         except requests.RequestException as e:            
             frappe.throw(str(e))
@@ -235,6 +235,7 @@ class ETALog(Document):
         ]
         
         self.submission_summary = "\n".join(summary)
-        
+        # TODO reflect status on its sales invoice (add a virtual status field in sales invoice form)
+        # TODO Make pos profile field read only
         # Store full response
         self.eta_response = json.dumps(submission_response, indent=4)
