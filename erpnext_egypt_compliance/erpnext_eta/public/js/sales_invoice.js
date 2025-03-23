@@ -171,7 +171,7 @@ frappe.ui.form.on('Sales Invoice', {
 					}
 				}
 			});
-		},"{PDF}");
+		},"ETA");
 		
 		if (!frm.doc.eta_uuid) {
 			btn.addClass('disabled');
