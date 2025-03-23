@@ -155,7 +155,7 @@ frappe.ui.form.on('Sales Invoice', {
 				frappe.msgprint('Sales Invoice must have a UUID to get ETA PDF.');
 				return;
 			}
-			var url = frappe.urllib.get_base_url() + '/api/method/erpnext_egypt_compliance.erpnext_eta.main.download_eta_pdf?docname=' + encodeURIComponent(frm.doc.name);
+			var url = frappe.urllib.get_base_url() + '/api/method/erpnext_egypt_compliance.erpnext_eta.main.get_eta_pdf?docname=' + encodeURIComponent(frm.doc.name);
 			$.ajax({
 				url: url,
 				type: 'GET',

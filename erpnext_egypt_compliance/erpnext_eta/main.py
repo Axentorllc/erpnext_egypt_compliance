@@ -17,6 +17,7 @@ from erpnext_egypt_compliance.erpnext_eta.utils import (
 )
 from erpnext_egypt_compliance.erpnext_eta.doctype.eta_log.einvoice_logging_utils import submit_einvoice_using_logger
 from erpnext_egypt_compliance.erpnext_eta.utils import get_company_eta_connector
+from erpnext_egypt_compliance.erpnext_eta.einvoice_submitter import EInvoiceSubmitter
 
 
 @frappe.whitelist()
@@ -31,7 +32,7 @@ def download_eta_inv_json(docname):
     return download_eta_invoice_json(docname, file_content)
 
 @frappe.whitelist()
-def download_eta_pdf(docname):
+def get_eta_pdf(docname):
     try:
         sinv_doc_company = frappe.get_value("Sales Invoice", docname, "company")
         if not sinv_doc_company:
@@ -41,8 +42,8 @@ def download_eta_pdf(docname):
         if not connector:
             frappe.throw(f"ETA Connector not found for company {sinv_doc_company}")
 
-        # Directly call the modified method
-        return connector.download_eta_pdf(docname)
+        einvoice_submitter = EInvoiceSubmitter(connector)
+        return einvoice_submitter.download_eta_pdf(docname, connector)
 
     except Exception as e:
         frappe.log_error(f"ETA PDF Download Error: {str(e)}")

@@ -69,29 +69,6 @@ class ETAConnector(Document):
             "Authorization": "Bearer " + self.get_eta_access_token(),
         }
 
-    def download_eta_pdf(self, docname):
-        try:
-            headers = {"Authorization": "Bearer " + self.get_eta_access_token()}
-            uuid = frappe.get_value("Sales Invoice", docname, "eta_uuid")
-            
-            if not uuid:
-                frappe.throw("No UUID found for the Sales Invoice")
-
-            document_url = f"{self.ETA_BASE}/documents/{uuid}/pdf"
-            response = self.session.get(document_url, headers=headers)
-            
-            if response.status_code == 200:
-                frappe.local.response.filename = f"eta_invoice_{docname}.pdf"
-                frappe.local.response.filecontent = response.content
-                frappe.local.response.type = "download"
-                frappe.local.response.content_type = "application/pdf"
-            else:
-                frappe.throw(f"Failed to download PDF. Status code: {response.status_code}")
-
-        except Exception as e:
-            frappe.log_error(f"ETA PDF Download Error: {str(e)}")
-            frappe.throw(f"Error downloading PDF: {str(e)}")
-
     def submit_eta_documents(self, eta_invoice):
         headers = self.get_headers()
         data = {"documents": [eta_invoice]}
