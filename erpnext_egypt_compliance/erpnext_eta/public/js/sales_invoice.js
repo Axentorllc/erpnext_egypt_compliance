@@ -160,23 +160,14 @@ frappe.ui.form.on('Sales Invoice', {
 					} else {
 						window.location = url;
 					}
-					if (result.exc) {
-						console.log(result.exc);
-					}
+					
 				},
 				error: (r) => {
-					if (r.responseJSON && r.responseJSON._server_messages) {
-						var server_messages = jQuery.parseJSON(r.responseJSON._server_messages);
-						var object = JSON.parse(server_messages);
-						frappe.throw({
-							message: object.message,
-							title: object.title
-						});
-					} else {
-						frappe.throw({
-							message: 'Failed to download PDF. Please try again.',
-							title: 'Error'
-						});
+					console.log(r)
+					if (r.responseJSON && r.responseJSON._server_messages && r.responseJSON._server_messages.length > 0) {
+						console.log(r.responseJSON._server_messages)
+						var server_massage = JSON.parse(r.responseText);
+						frappe.throw({ message: `<pre> ${server_massage.exc}<pre>`, title: server_massage.exc_type, indicator: "red" });
 					}
 				}
 			});
