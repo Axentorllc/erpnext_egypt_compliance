@@ -10,6 +10,7 @@ frappe.ui.form.on('Sales Invoice', {
 		frm.trigger('eta_add_download_e_receipt_button')
 		frm.trigger('eta_submit_ereceipt')
 		frm.trigger('eta_add_download_pdf_button');
+		
 	},
 	refresh(frm) {
 	},
@@ -27,9 +28,9 @@ frappe.ui.form.on('Sales Invoice', {
 					else {
 						window.location = url;
 					}
-					if (result.exc){
-						console.log(exc)
-					}
+					// if (result.exc){
+					// 	console.log(exc)
+					// }
 				},
 				error:(r) => {
 					if (r.responseJSON.exc_type) {
@@ -149,7 +150,11 @@ frappe.ui.form.on('Sales Invoice', {
 	},
 	eta_add_download_pdf_button(frm) {
 		// Create button with proper name as suggested
-		let btn = frm.add_custom_button('Download ETA PDF', () => {
+		frm.add_custom_button('Download ETA PDF', () => {
+			if (!frm.doc.eta_uuid) {
+				frappe.msgprint('Sales Invoice must have a UUID to get ETA PDF.');
+				return;
+			}
 			var url = frappe.urllib.get_base_url() + '/api/method/erpnext_egypt_compliance.erpnext_eta.main.download_eta_pdf?docname=' + encodeURIComponent(frm.doc.name);
 			$.ajax({
 				url: url,
@@ -172,9 +177,6 @@ frappe.ui.form.on('Sales Invoice', {
 				}
 			});
 		},"ETA");
-		
-		if (!frm.doc.eta_uuid) {
-			btn.addClass('disabled');
-		}
+
 	},
 })
