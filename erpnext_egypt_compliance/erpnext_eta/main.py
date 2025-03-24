@@ -1,7 +1,7 @@
 import json
 
 import frappe
-
+from frappe import _
 from erpnext_egypt_compliance.erpnext_eta.einvoice_schema import get_invoice_asjson
 from erpnext_egypt_compliance.erpnext_eta.legacy_einvoice import (
     fetch_eta_status as fetch_eta_status_legacy,
@@ -36,11 +36,11 @@ def get_eta_pdf(docname):
     try:
         sinv_doc_company = frappe.get_value("Sales Invoice", docname, "company")
         if not sinv_doc_company:
-            frappe.throw("Company not found for the Sales Invoice")
+            frappe.throw(_("Company not found for the Sales Invoice"))
 
         connector = get_company_eta_connector(sinv_doc_company)
         if not connector:
-            frappe.throw(f"ETA Connector not found for company {sinv_doc_company}")
+            frappe.throw(_("ETA Connector not found for company {0}").format(sinv_doc_company))
 
         einvoice_submitter = EInvoiceSubmitter(connector)
         return einvoice_submitter.download_eta_pdf(docname, connector)
