@@ -37,16 +37,16 @@ class EInvoiceSubmitter:
         _eta_response["status_code"] = response.status_code or None
         return _eta_response
 
-    def download_eta_pdf(self, docname, connector):
+    def download_eta_pdf(self, docname):
         try:
-            headers = connector.get_headers()
+            headers = self.eta_connector.get_headers()
             uuid = frappe.get_value("Sales Invoice", docname, "eta_uuid")
             
             if not uuid:
                 frappe.throw("No UUID found for the Sales Invoice")
 
-            document_url = f"{connector.ETA_BASE}/documents/{uuid}/pdf"
-            response = connector.session.get(document_url, headers=headers)
+            document_url = f"{self.eta_connector.ETA_BASE}/documents/{uuid}/pdf"
+            response = self.eta_connector.session.get(document_url, headers=headers)
             
             if response.status_code == 200:
                 frappe.local.response.filename = f"eta_invoice_{docname}.pdf"
