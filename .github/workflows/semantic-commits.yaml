@@ -1,0 +1,32 @@
+name: "Check Semantic Commit Messages and PR Title"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 200
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 18
+          check-latest: true
+
+      - name: Check commit titles
+        run: |
+          npm install @commitlint/cli @commitlint/config-conventional
+          npx commitlint --verbose --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+                
+      - name: Check PR title
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          if ! echo "$PR_TITLE" | grep -qE '^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\([a-z0-9-]+\))?: .+$'; then
+            echo "PR title does not follow the semantic commit guidelines."
+            exit 1
+          fi

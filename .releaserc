@@ -1,0 +1,55 @@
+{
+	"branches": ["main"],
+	"plugins": [
+		[
+			"@semantic-release/commit-analyzer",
+			{
+				"preset": "angular",
+				"releaseRules": [
+					{ "breaking": true, "release": "minor" },
+					{ "revert": true, "release": "patch" },
+					{ "type": "feat", "release": "minor" },
+					{ "type": "fix", "release": "patch" },
+					{ "type": "perf", "release": "patch" },
+					{ "type": "refactor", "release": "patch" },
+					{ "type": "docs", "release": "patch" },
+					{ "type": "chore", "release": "patch" }
+				]
+			}
+		],
+		[
+			"@semantic-release/release-notes-generator",
+			{
+				"preset": "angular",
+				"presetConfig": {
+					"types": [
+						{ "type": "feat", "section": "&#x2728; Features", "hidden": false },
+						{ "type": "fix", "section": "🐛 Bug Fixes", "hidden": false },
+						{ "type": "perf", "section": "⚡ Performance", "hidden": false },
+						{ "type": "refactor", "section": "🔨 Code Refactoring", "hidden": false },
+						{ "type": "docs", "section": "📖 Documentation", "hidden": false },
+						{ "type": "chore", "section": "🔁 Maintenance", "hidden": false },
+						{ "type": "revert", "section": "⏪ Reverts", "hidden": false },
+						{ "type": "test", "section": "🧪 Tests", "hidden": false },
+						{ "type": "build", "section": "🏗 Build System", "hidden": false },
+						{ "type": "ci", "section": "🔧 CI", "hidden": false }
+					]
+				}
+			}
+		],
+		[
+			"@semantic-release/exec",
+			{
+				"prepareCmd": 'sed -ir "s/[0-9]*\.[0-9]*\.[0-9]*/${nextRelease.version}/" erpnext_egypt_compliance/__init__.py'
+			}
+		],
+		[
+			"@semantic-release/git",
+			{
+				"assets": ["erpnext_egypt_compliance/__init__.py"],
+				"message": "chore(release): Bump to Version ${nextRelease.version}\n\n${nextRelease.notes}"
+			}
+		],
+		["@semantic-release/github", {"draftRelease": true}]
+	]
+}
