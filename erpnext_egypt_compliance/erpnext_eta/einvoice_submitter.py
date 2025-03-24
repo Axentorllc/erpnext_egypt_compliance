@@ -38,27 +38,22 @@ class EInvoiceSubmitter:
         return _eta_response
 
     def download_eta_pdf(self, docname):
-        try:
-            headers = self.eta_connector.get_headers()
-            uuid = frappe.get_value("Sales Invoice", docname, "eta_uuid")
-            
-            if not uuid:
-                frappe.throw("No UUID found for the Sales Invoice")
+        headers = self.eta_connector.get_headers()
+        uuid = frappe.get_value("Sales Invoice", docname, "eta_uuid")
+        
+        if not uuid:
+            frappe.throw("No UUID found for the Sales Invoice")
 
-            document_url = f"{self.eta_connector.ETA_BASE}/documents/{uuid}/pdf"
-            response = self.eta_connector.session.get(document_url, headers=headers)
-            
-            if response.status_code == 200:
-                frappe.local.response.filename = f"eta_invoice_{docname}.pdf"
-                frappe.local.response.filecontent = response.content
-                frappe.local.response.type = "download"
-                frappe.local.response.content_type = "application/pdf"
-            else:
-                frappe.throw(f"Failed to download PDF. Status code: {response.status_code}")
-
-        except Exception as e:
-            frappe.log_error(f"ETA PDF Download Error: {str(e)}")
-            frappe.throw(f"Error downloading PDF: {str(e)}")
+        document_url = f"{self.eta_connector.ETA_BASE}/documents/{uuid}/pdf"
+        response = self.eta_connector.session.get(document_url, headers=headers)
+        
+        if response.status_code == 200:
+            frappe.local.response.filename = f"eta_invoice_{docname}.pdf"
+            frappe.local.response.filecontent = response.content
+            frappe.local.response.type = "download"
+            frappe.local.response.content_type = "application/pdf"
+        else:
+            frappe.throw(f"Failed to download PDF. Status code: {response.status_code}")
             
     def _handle_exception(self, exception):
         traceback = frappe.get_traceback()
