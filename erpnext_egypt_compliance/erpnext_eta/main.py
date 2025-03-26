@@ -43,7 +43,7 @@ def get_eta_pdf(docname):
             frappe.throw(_("ETA Connector not found for company {0}").format(sinv_doc_company))
 
         einvoice_submitter = EInvoiceSubmitter(connector)
-        return einvoice_submitter.download_eta_pdf(docname, connector)
+        return einvoice_submitter.download_eta_pdf(docname)
 
     except Exception as e:
         frappe.log_error(f"ETA PDF Download Error: {str(e)}")
