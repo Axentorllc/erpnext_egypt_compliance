@@ -46,7 +46,7 @@ def get_eta_pdf(docname):
         return einvoice_submitter.download_eta_pdf(docname)
 
     except Exception as e:
-        frappe.log_error(f"ETA PDF Download Error: {str(e)}")
+        frappe.log_error(f"ETA PDF Download Error for invoice {docname}: {str(e)}")
         frappe.throw(f"Error downloading PDF: {str(e)}")
 
 @frappe.whitelist()
