@@ -60,35 +60,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Master Data",
-   "link_count": 2,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Company",
-   "link_count": 0,
-   "link_to": "Company",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Sales Taxes and Charges Template",
-   "link_count": 0,
-   "link_to": "Sales Taxes and Charges Template",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Transactions",
    "link_count": 2,
    "link_type": "DocType",
@@ -221,9 +192,58 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Master Data",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Company",
+   "link_count": 0,
+   "link_to": "Company",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sales Taxes and Charges Template",
+   "link_count": 0,
+   "link_to": "Sales Taxes and Charges Template",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Customer",
+   "link_count": 0,
+   "link_to": "Customer",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "UOM",
+   "link_count": 0,
+   "link_to": "UOM",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-01-14 14:34:06.826753",
+ "modified": "2025-03-25 13:47:06.318371",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "EG Compliance",
@@ -259,16 +279,16 @@
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Support Tickets",
+   "label": "Documentation",
    "type": "URL",
-   "url": "https://support.axentor.app"
+   "url": "https://axe-docs.frappe.cloud/EG%20Compliance"
   },
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Documentation",
+   "label": "Support Tickets",
    "type": "URL",
-   "url": "https://docs.axentor.app"
+   "url": "https://support.axentor.app"
   }
  ],
  "title": "EG Compliance"
