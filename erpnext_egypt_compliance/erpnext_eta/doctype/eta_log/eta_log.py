@@ -156,7 +156,6 @@ class ETALog(Document):
                 return
                 
             self._update_documents_from_submission(submission_response)
-            frappe.msgprint('updated documents')
             self.save()
                         
         except requests.RequestException as e:
@@ -236,6 +235,5 @@ class ETALog(Document):
         ]
         
         self.submission_summary = "\n".join(summary)
-        # TODO Make pos profile field read only
         # Store full response
         self.eta_response = json.dumps(submission_response, indent=4)
