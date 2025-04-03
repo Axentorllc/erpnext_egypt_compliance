@@ -140,43 +140,47 @@ class ETALog(Document):
 
     @frappe.whitelist()
     def update_documents_status(self):
-        # Check and update document statuses from ETA submission details
-        if not self.submission_id:
-            frappe.throw("Submission ID is required to check status")
+        try:
+            # Check and update document statuses from ETA submission details
+            if not self.submission_id:
+                frappe.throw("Submission ID is required to check status")
 
-        # Retrieve the connector from the first document in the child table
-        sinv_doc_company = frappe.get_value("Sales Invoice", self.documents[0], "company")
-        connector = get_company_eta_connector(sinv_doc_company)
+            # Retrieve the connector from the first document in the child table
+            sinv_doc_company = frappe.get_value("Sales Invoice", self.documents[0], "company")
+            connector = get_company_eta_connector(sinv_doc_company)
 
-        submission_response = self._get_submission_details(connector)
-        
-        if not submission_response:
-            frappe.msgprint('no submission response')
-            return
+            submission_response = self._get_submission_details(connector)
             
-        self._update_documents_from_submission(submission_response)
-        frappe.msgprint('updated documents')
-        self.save()
+            if not submission_response:
+                frappe.msgprint('no submission response')
+                return
+                
+            self._update_documents_from_submission(submission_response)
+            frappe.msgprint('updated documents')
+            self.save()
+                        
+        except requests.RequestException as e:
+            frappe.log_error(f"ETA API Request Failed: {str(e)}", "ETA API Error")
+            frappe.throw(f"Failed to fetch submission details: {str(e)}")
 
     def _get_submission_details(self, connector):
         # Fetch document submission details from ETA API
         page_no = len(self.documents)
-        try:
-            headers = {
-                "Authorization": f"Bearer " + connector.get_eta_access_token(),
-                "PageSize": "1",
-                "PageNo": str(page_no)
-            }
-            
-            url = f"{connector.ETA_BASE}/documentSubmissions/{self.submission_id}"
-            # use connector initializer
-            response = connector.session.get(url, headers=headers)
+        headers = {
+            "Authorization": f"Bearer " + connector.get_eta_access_token(),
+            "PageSize": "1",
+            "PageNo": str(page_no)
+        }
+        
+        url = f"{connector.ETA_BASE}/documentSubmissions/{self.submission_id}"
+        # use connector initializer
+        response = connector.session.get(url, headers=headers)
 
-            if response.status_code == 200:
-                return response.json()
-                
-        except requests.RequestException as e:            
-            frappe.throw(str(e))
+        if response.status_code == 200:
+            return response.json()
+        else:
+            error_message = response.json().get("error", {}).get("message", "Unknown error")
+            frappe.throw(f"Failed to fetch submission details: {error_message}")
 
     def _update_documents_from_submission(self, submission_response):
         # Map internal IDs to their document details
