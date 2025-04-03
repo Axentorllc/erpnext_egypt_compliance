@@ -197,7 +197,6 @@ class ETALog(Document):
             "Rejected": 0,
             "Cancelled": 0
         }
-        
         for doc_row in self.documents:
             eta_doc = document_map.get(doc_row.reference_document)
             if not eta_doc:
@@ -216,7 +215,7 @@ class ETALog(Document):
                 "custom_eta_public_url": eta_doc.get("publicUrl"),
                 "error": eta_doc.get("documentStatusReason") if eta_doc.get("documentStatusReason") else ""
             })
-        
+        frappe.db.set_value("Sales Invoice", doc_row.reference_document, "eta_status", status)
         # Map ETA status to internal submission status
         self.submission_status = {
             "Valid": "Completed",
@@ -237,7 +236,6 @@ class ETALog(Document):
         ]
         
         self.submission_summary = "\n".join(summary)
-        # TODO reflect status on its sales invoice (add a virtual status field in sales invoice form)
         # TODO Make pos profile field read only
         # Store full response
         self.eta_response = json.dumps(submission_response, indent=4)
