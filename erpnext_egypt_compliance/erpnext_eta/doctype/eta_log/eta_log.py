@@ -234,8 +234,6 @@ class ETALog(Document):
             f"Invalid Documents: {status_counts['invalid']}",
             f"Rejected: {status_counts['rejected']}",
             f"Cancelled: {status_counts['cancelled']}",
-            f"Submission Date: {submission_response.get('dateTimeReceived')}",
-            f"Submission ID: {submission_response.get('submissionid')}"
         ]
         
         self.submission_summary = "\n".join(summary)
