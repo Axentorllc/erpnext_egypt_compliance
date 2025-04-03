@@ -139,7 +139,7 @@ class ETALog(Document):
 
 
     @frappe.whitelist()
-    def update_documents_status(self, connector):
+    def update_documents_status(self):
         # Check and update document statuses from ETA submission details
         if not self.submission_id:
             frappe.throw("Submission ID is required to check status")
