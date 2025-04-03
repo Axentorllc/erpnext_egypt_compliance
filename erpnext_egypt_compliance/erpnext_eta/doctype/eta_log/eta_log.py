@@ -228,11 +228,11 @@ class ETALog(Document):
         
         summary = [
             f"Total Documents: {metadata.get('totalCount', 0)}",
-            f"Submitted: {status_counts['submitted']}",
-            f"Valid Documents: {status_counts['valid']}",
-            f"Invalid Documents: {status_counts['invalid']}",
-            f"Rejected: {status_counts['rejected']}",
-            f"Cancelled: {status_counts['cancelled']}",
+            f"Submitted: {status_counts['Submitted']}",
+            f"Valid Documents: {status_counts['Valid']}",
+            f"Invalid Documents: {status_counts['Invalid']}",
+            f"Rejected: {status_counts['Rejected']}",
+            f"Cancelled: {status_counts['Cancelled']}",
         ]
         
         self.submission_summary = "\n".join(summary)
