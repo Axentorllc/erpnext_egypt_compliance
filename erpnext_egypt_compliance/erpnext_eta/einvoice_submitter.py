@@ -14,7 +14,6 @@ class EInvoiceSubmitter:
         self.eta_connector = eta_connector
 
     def submit_documents(self, invoices):		
-
         try:
             data = self._prepare_data(invoices)
             eta_response = self._send_submit_request(data)
@@ -39,4 +38,22 @@ class EInvoiceSubmitter:
 
     def _handle_exception(self, exception):
         traceback = frappe.get_traceback()
-        error_doc = frappe.log_error("Submit EInvoice", message=str(exception) + "\n" + str(traceback))  
+        error_doc = frappe.log_error("Submit EInvoice", message=str(exception) + "\n" + str(traceback))
+
+    def get_submission_details(self, submission_id, page_no=1):
+        """
+        Fetch document submission details from ETA API.
+        """
+        headers = self.eta_connector.get_headers()
+        headers.update({
+            "PageSize": "1",
+            "PageNo": str(page_no)
+        })
+        url = f"{self.eta_connector.ETA_BASE}/documentSubmissions/{submission_id}"
+        response = self.eta_connector.session.get(url, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            error_message = response.json().get("error", {}).get("message", "Unknown error")
+            frappe.throw(f"Failed to fetch submission details: {error_message}")

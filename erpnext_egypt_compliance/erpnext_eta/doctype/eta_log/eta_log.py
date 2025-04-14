@@ -173,7 +173,9 @@ class ETALog(Document):
         
         url = f"{connector.ETA_BASE}/documentSubmissions/{self.submission_id}"
         # use connector initializer
-        response = connector.session.get(url, headers=headers)
+        submitter = EInvoiceSubmitter(connector)
+        page_no = len(self.documents)
+        submission_response = submitter.get_submission_details(self.submission_id, page_no)
 
         if response.status_code == 200:
             return response.json()
