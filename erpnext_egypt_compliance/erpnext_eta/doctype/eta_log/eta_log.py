@@ -216,7 +216,7 @@ class ETALog(Document):
                 "custom_eta_public_url": eta_doc.get("publicUrl"),
                 "error": eta_doc.get("documentStatusReason") if eta_doc.get("documentStatusReason") else ""
             })
-        frappe.db.set_value("Sales Invoice", doc_row.reference_document, "eta_status", status)
+            frappe.db.set_value("Sales Invoice", doc_row.reference_document, "eta_status", status)
         # Map ETA status to internal submission status
         self.submission_status = {
             "Valid": "Completed",
