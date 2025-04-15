@@ -46,7 +46,7 @@ class EInvoiceSubmitter:
         """
         headers = self.eta_connector.get_headers()
         headers.update({
-            "PageSize": "1",
+            "PageSize": "20",
             "PageNo": str(page_no)
         })
         url = f"{self.eta_connector.ETA_BASE}/documentSubmissions/{submission_id}"
