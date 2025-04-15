@@ -163,16 +163,8 @@ class ETALog(Document):
             frappe.throw(f"Failed to fetch submission details: {str(e)}")
 
     def _get_submission_details(self, connector):
-        # Fetch document submission details from ETA API
-        page_no = len(self.documents)
-        headers = {
-            "Authorization": f"Bearer " + connector.get_eta_access_token(),
-            "PageSize": "1",
-            "PageNo": str(page_no)
-        }
-        
         url = f"{connector.ETA_BASE}/documentSubmissions/{self.submission_id}"
-        # use connector initializer
+		
         submitter = EInvoiceSubmitter(connector)
         page_no = len(self.documents)
         submission_response = submitter.get_submission_details(self.submission_id, page_no)
