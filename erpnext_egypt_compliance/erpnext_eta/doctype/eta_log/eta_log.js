@@ -52,7 +52,6 @@ frappe.ui.form.on("ETA Log", {
 	update_documents_status(frm) {
 		frm.add_custom_button("Update Documents Status", () => {
 			try {
-				frm.set_df_property("pos_profile", "read_only", 1);
 				frm.call({
 					doc: frm.doc,
 					method: "update_documents_status",
