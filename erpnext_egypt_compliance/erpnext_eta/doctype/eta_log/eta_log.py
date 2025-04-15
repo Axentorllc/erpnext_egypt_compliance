@@ -165,7 +165,7 @@ class ETALog(Document):
 
     def _get_submission_details(self, connector):
         url = f"{connector.ETA_BASE}/documentSubmissions/{self.submission_id}"
-		
+
         submitter = EInvoiceSubmitter(connector)
         page_no = len(self.documents)
         submission_response = submitter.get_submission_details(self.submission_id, page_no)
@@ -201,7 +201,6 @@ class ETALog(Document):
                 "eta_status": eta_doc.get("status"),
                 "long_id": eta_doc.get("longId"), 
                 "accepted": eta_doc.get("status") == "Valid",
-                "custom_eta_public_url": eta_doc.get("publicUrl"),
                 "error": eta_doc.get("documentStatusReason") if eta_doc.get("documentStatusReason") else ""
             })
             frappe.db.set_value("Sales Invoice", doc_row.reference_document, "eta_status", status)
