@@ -177,6 +177,76 @@ frappe.ui.form.on('Sales Invoice', {
 				}
 			});
 		},"ETA");
-
+	},
+		eta_add_cancel_button(frm) {
+			frm.add_custom_button('Cancel ETA Invoice', () => {
+				// Validation checks
+				if (!frm.doc.eta_uuid) {
+					frappe.msgprint({
+						title: __('Validation Error'),
+						message: __('Sales Invoice must have a UUID to cancel in ETA.'),
+						indicator: 'red'
+					});
+					return;
+				}
+		
+				if (frm.doc.eta_status == "Cancelled") {
+					frappe.msgprint({
+						title: __('Already Cancelled'),
+						message: __('Invoice is already cancelled.'),
+						indicator: 'orange'
+					});
+					return;
+				}
+				// Only allow cancellation for Valid or Submitted status
+				if (!["Valid", "Submitted"].includes(frm.doc.eta_status)) {
+					frappe.msgprint({
+						title: __('Invalid Status'),
+						message: __('Invoice can only be cancelled when in Valid or Submitted status.'),
+						indicator: 'red'
+					});
+					return;
+				}
+		
+				frappe.prompt([
+					{
+						label: 'Cancellation Reason',
+						fieldname: 'reason',
+						fieldtype: 'Small Text',
+						reqd: 1
+					}
+				],
+				function(values) {
+					frappe.call({
+						method: 'erpnext_egypt_compliance.erpnext_eta.main.cancel_eta_invoice',
+						args: {
+							docname: frm.doc.name,
+							reason: values.reason
+						},
+						freeze: true,
+						freeze_message: __("Cancelling ETA Invoice..."),
+						callback: function(r) {
+							if (r.message) {
+								if (r.message.status === "success") {
+									frappe.msgprint({
+										message: __("Cancellation request sent successfully"),
+										alert: true,
+										indicator: 'green',
+										title: __('Success')
+									});
+								} else {
+									frappe.msgprint({
+										message: __(r.message.message || "Failed to Cancel ETA Invoice"),
+										alert: true,
+										indicator: 'red',
+										title: __('Error')
+									});
+								}
+							}
+						}
+					});
+				},
+			);
+		}, "ETA");
 	},
 })

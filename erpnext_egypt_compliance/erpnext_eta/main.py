@@ -68,3 +68,33 @@ def submit_eta_invoice(docname):
         return submit_eta_invoice_legacy(docname, inv) if not enable_eta_log else submit_einvoice_using_logger(inv, company)
     else:
         return submit_eta_invoice_legacy(docname) if not enable_eta_log else submit_einvoice_using_logger(docname, company)
+
+@frappe.whitelist()
+def cancel_eta_invoice(docname, reason):
+    try:
+        doc = frappe.get_doc("Sales Invoice", docname)
+        connector = get_company_eta_connector(doc.company)
+        if not connector:
+            frappe.throw(_("ETA Connector not found for company {0}").format(doc.company))
+            
+        einvoice_submitter = EInvoiceSubmitter(connector)
+        response = einvoice_submitter.cancel_document(doc.eta_uuid, reason)
+        
+        if response.get("status_code") == 200:
+            doc.eta_status = "Cancelled"
+            doc.save()
+            return {"status": "success"}
+            
+        if response.get("error"):
+            error = response.get("error")           
+            details = error.get("details")
+            
+            if isinstance(details, list) and details and "message" in details[0]:
+                message = details[0]["message"] or None
+        if not message:
+            message = "An unknown error occurred"  # Default error message  
+        return {"status": "error", "message": str(message)}
+        
+    except Exception as e:
+        frappe.log_error(f"ETA Invoice Cancellation Error: {str(e)}")
+        return {"status": "error", "message": str(e)}
