@@ -8,6 +8,7 @@ from erpnext_egypt_compliance.erpnext_eta.utils import parse_error_details
 from erpnext_egypt_compliance.erpnext_eta.ereceipt_submitter import EReceiptSubmitter
 import json
 from erpnext_egypt_compliance.erpnext_eta.utils import get_company_eta_connector
+from erpnext_egypt_compliance.erpnext_eta.einvoice_submitter import EInvoiceSubmitter
 
 
 class ETALog(Document):
@@ -152,7 +153,7 @@ class ETALog(Document):
             submission_response = self._get_submission_details(connector)
             
             if not submission_response:
-                frappe.msgprint('no submission response')
+                frappe.msgprint('No submission response')
                 return
                 
             self._update_documents_from_submission(submission_response)
@@ -168,12 +169,7 @@ class ETALog(Document):
         submitter = EInvoiceSubmitter(connector)
         page_no = len(self.documents)
         submission_response = submitter.get_submission_details(self.submission_id, page_no)
-
-        if response.status_code == 200:
-            return response.json()
-        else:
-            error_message = response.json().get("error", {}).get("message", "Unknown error")
-            frappe.throw(f"Failed to fetch submission details: {error_message}")
+        return submission_response
 
     def _update_documents_from_submission(self, submission_response):
         # Map internal IDs to their document details

@@ -50,10 +50,16 @@ class EInvoiceSubmitter:
             "PageNo": str(page_no)
         })
         url = f"{self.eta_connector.ETA_BASE}/documentSubmissions/{submission_id}"
-        response = self.eta_connector.session.get(url, headers=headers)
-
-        if response.status_code == 200:
+        try:
+            response = self.eta_connector.session.get(url, headers=headers)
+            response.raise_for_status()
             return response.json()
-        else:
-            error_message = response.json().get("error", {}).get("message", "Unknown error")
-            frappe.throw(f"Failed to fetch submission details: {error_message}")
+        except Exception as e:
+            message = f"Failed to fetch submission details: {e}"
+            if response is not None:
+                try:
+                    message += f"\nResponse: {response.text}"
+                except Exception:
+                    pass
+            frappe.log_error(message)
+            return frappe._dict()
