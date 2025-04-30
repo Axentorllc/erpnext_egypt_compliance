@@ -3,37 +3,50 @@
 
 frappe.ui.form.on("ETA Log", {
 	refresh(frm) {
-		if (frm.doc.submission_id) {
-			frm.trigger("get_submission_status");
-			frm.trigger("update_documents_status");
+		const { submission_id, pos_profile } = frm.doc;
+		
+		// Buttons related to eReceipt		
+		if (submission_id && pos_profile) {
+			frm.add_custom_button("Get Receipts Submission Status", () => { 
+				frm.trigger("get_receipt_submission");
+			}, "ETA Actions");
+
+			frm.add_custom_button("Update Receipts Status", () => { 
+				frm.trigger("update_receipts_status");
+			}, "ETA Actions")
 		}
-		if (frm.doc.eta_submission_status === "Valid") {
-			frm.trigger("update_receipts_status");
+
+		// Buttons related to eInvoice
+		if (submission_id && !pos_profile) { 
+			frm.add_custom_button("Get Invoices Submission Status", () => { 
+				frm.trigger("update_invoices_status");
+			}, "ETA Actions");
 		}
 	},
-	get_submission_status(frm) {
-		frm.add_custom_button("Get Submission Status", () => {
-			try {
-				frm.call({
-					doc: frm.doc,
-					method: "get_submission_status",
-					freeze: true,
-					freeze_message: __("Getting Submission Details")
-					}).then((r) => {
-						if (!r.exc) {
-							frm.reload_doc();
-							frappe.show_alert({ message: __("Getting submission details done"), indicator: "green" });
-						}
-					});
-				} catch(e) {
-					console.log(e);
-			}
-		}, "ETA Portal")
+	async get_receipt_submission(frm) {
+		try {
+			await frm.call({
+				doc: frm.doc,
+				method: "get_submission_status",
+				freeze: true,
+				freeze_message: __("Getting Receipts Submission Details")
+				}).then((r) => {
+					if (!r.exc) {
+						frm.reload_doc();
+						frappe.show_alert({ message: __("Getting submission details done"), indicator: "green" });
+					}
+				});
+			} catch(e) {
+				console.log(e);
+				frappe.show_alert({ 
+					message: __("Failed to get submission details"), 
+					indicator: "red" 
+				});
+		}
 	},
-	update_receipts_status(frm) {
-		frm.add_custom_button("Get & Update receipts Status", () => {
+	async update_receipts_status(frm) {
 			try {
-				frm.call({
+				await frm.call({
 					doc: frm.doc,
 					method: "update_receipts_status",
 					freeze: true,
@@ -45,18 +58,20 @@ frappe.ui.form.on("ETA Log", {
 						}
 					});
 				} catch(e) {
-					console.log(e);
+				console.log(e);
+				frappe.show_alert({ 
+					message: __("Failed to update receipts status"), 
+					indicator: "red" 
+				});
 			}
-		}, "ETA Portal")
 	},
-	update_documents_status(frm) {
-		frm.add_custom_button("Update Documents Status", () => {
+	async update_invoices_status(frm) {
 			try {
-				frm.call({
+				await frm.call({
 					doc: frm.doc,
 					method: "update_documents_status",
 					freeze: true,
-					freeze_message: __("Updating Documents Status")
+					freeze_message: __("Updating Invoices Status")
 				}).then((r) => {
 					if (!r.exc) {
 						frm.reload_doc();
@@ -73,6 +88,5 @@ frappe.ui.form.on("ETA Log", {
 					indicator: "red" 
 				});
 			}
-		}, "ETA Portal");
 	},
 });
