@@ -98,6 +98,7 @@ fixtures = [
                     "Sales Invoice-eta_long_key",
                     "Sales Invoice-eta_signature",
                     "Sales Invoice-eta_exchange_rate",
+                    "Sales Invoice-eta_cancellation_reason"
                     "Company-eta_details",
                     "Company-eta_issuer_type",
                     "Company-eta_tax_id",
