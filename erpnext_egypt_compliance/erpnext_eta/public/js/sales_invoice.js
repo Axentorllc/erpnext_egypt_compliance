@@ -10,7 +10,7 @@ frappe.ui.form.on('Sales Invoice', {
 		frm.trigger('eta_add_download_e_receipt_button')
 		frm.trigger('eta_submit_ereceipt')
 		frm.trigger('eta_add_download_pdf_button');
-		
+		frm.trigger('eta_add_cancel_button');
 	},
 	refresh(frm) {
 	},
