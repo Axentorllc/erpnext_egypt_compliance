@@ -83,12 +83,14 @@
   {
    "fieldname": "access_token",
    "fieldtype": "Password",
-   "label": "Access Token"
+   "label": "Access Token",
+   "read_only": 1
   },
   {
    "fieldname": "expires_in",
    "fieldtype": "Datetime",
-   "label": "Expires In"
+   "label": "Expires In",
+   "read_only": 1
   },
   {
    "fieldname": "auto_submission_settings_section",
@@ -141,7 +143,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-15 16:03:43.357601",
+ "modified": "2025-05-04 14:50:21.448094",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "ETA Connector",
