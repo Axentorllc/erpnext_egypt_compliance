@@ -74,10 +74,17 @@ class EInvoiceSubmitter:
         }).encode("utf8")
                 
         response = self.eta_connector.session.put(url, headers=headers, data=data)
-        try:
-            eta_response = frappe._dict(response.json())
-        except json.JSONDecodeError:
-            eta_response = frappe._dict({})
+        eta_response = frappe._dict({})
+        
+        eta_response["status_code"] = response.status_code
+        
+        # Only try to parse json if there's content and status code is not 200
+        if response.status_code != 200 and response.content:
+            try:
+                eta_response.update(response.json())
+            except json.JSONDecodeError:
+                # Empty or invalid JSON response
+                pass
             
         return eta_response
         

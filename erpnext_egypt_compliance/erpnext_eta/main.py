@@ -81,19 +81,30 @@ def cancel_eta_invoice(docname, reason):
         response = einvoice_submitter.cancel_document(doc.eta_uuid, reason)
         
         if response.get("status_code") == 200:
-            doc.eta_status = "Cancelled"
+            //doc.eta_status = "Cancelled"
+            doc.eta_cancellation_reason = reason
             doc.save()
             return {"status": "success"}
-            
-        if response.get("error"):
-            error = response.get("error")           
-            details = error.get("details")
-            
-            if isinstance(details, list) and details and "message" in details[0]:
-                message = details[0]["message"] or None
-        if not message:
-            message = "An unknown error occurred"  # Default error message  
-        return {"status": "error", "message": str(message)}
+        
+        # Handle error responses
+        error_message = "An unknown error occurred"
+        
+        if isinstance(response, dict):
+            if response.get("error"):
+                error = response.get("error")
+                if isinstance(error, dict) and error.get("details"):
+                    details = error.get("details")
+                    if isinstance(details, list) and details and isinstance(details[0], dict):
+                        error_message = details[0].get("message") or error_message
+                elif isinstance(error, dict) and error.get("message"):
+                    error_message = error.get("message")
+                elif isinstance(error, str):
+                    error_message = error
+            elif response.get("message"):
+                error_message = response.get("message")
+        
+        frappe.log_error(f"ETA Cancellation Error: {str(response)}", "ETA Cancellation Error")
+        return {"status": "error", "message": error_message}
         
     except Exception as e:
         frappe.log_error(f"ETA Invoice Cancellation Error: {str(e)}")
