@@ -183,7 +183,7 @@ frappe.ui.form.on('Sales Invoice', {
 			// Validation checks
 			if (!frm.doc.eta_uuid) {
 				frappe.msgprint({
-					title: __('Validation Error'),
+					title: __('Missing UUID'),
 					message: __('Sales Invoice must have a UUID to cancel in ETA.'),
 					indicator: 'red'
 				});
