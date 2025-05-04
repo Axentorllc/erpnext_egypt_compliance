@@ -106,35 +106,6 @@
    "type": "Link"
   },
   {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "ETA Connector",
-   "link_count": 2,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "ETA Connector",
-   "link_count": 0,
-   "link_to": "ETA Connector",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "ETA POS Connector",
-   "link_count": 0,
-   "link_to": "ETA POS Connector",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
    "description": "ETA preloaded data",
    "hidden": 0,
    "is_query_report": 0,
@@ -241,9 +212,48 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA Connector",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA Connector",
+   "link_count": 0,
+   "link_to": "ETA Connector",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA POS Connector",
+   "link_count": 0,
+   "link_to": "ETA POS Connector",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "ETA Settings",
+   "link_count": 0,
+   "link_to": "ETA Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-03-25 13:47:06.318371",
+ "modified": "2025-05-04 14:59:38.264262",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "EG Compliance",
