@@ -81,7 +81,7 @@ def cancel_eta_invoice(docname, reason):
         response = einvoice_submitter.cancel_document(doc.eta_uuid, reason)
         
         if response.get("status_code") == 200:
-            //doc.eta_status = "Cancelled"
+            doc.eta_status = "Cancelled"
             doc.eta_cancellation_reason = reason
             doc.save()
             return {"status": "success"}
