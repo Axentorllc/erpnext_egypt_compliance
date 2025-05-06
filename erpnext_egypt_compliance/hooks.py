@@ -14,6 +14,7 @@ doctype_js = {
     "Sales Invoice": "erpnext_eta/public/js/sales_invoice.js",
     "POS Invoice": "erpnext_eta/public/js/pos_invoice.js",
     "Item": "erpnext_eta/public/js/item.js",
+	"Sales Taxes and Charges Template": "erpnext_eta/public/js/sales_taxes_and_charges_template.js",
 }
 
 doc_events = {
