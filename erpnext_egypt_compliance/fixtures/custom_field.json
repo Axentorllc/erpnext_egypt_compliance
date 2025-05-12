@@ -2676,7 +2676,7 @@
     "in_list_view": 0,
     "in_preview": 0,
     "in_standard_filter": 0,
-    "insert_after": "eta_signature",
+    "insert_after": "eta_status",
     "label": "ETA Cancellation Reason",
     "length": 0,
     "mandatory_depends_on": null,
