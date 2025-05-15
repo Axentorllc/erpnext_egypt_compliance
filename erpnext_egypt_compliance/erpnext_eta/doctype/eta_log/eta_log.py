@@ -2,10 +2,13 @@
 # For license information, please see license.txt
 
 import frappe
+import requests
 from frappe.model.document import Document
 from erpnext_egypt_compliance.erpnext_eta.utils import parse_error_details
 from erpnext_egypt_compliance.erpnext_eta.ereceipt_submitter import EReceiptSubmitter
 import json
+from erpnext_egypt_compliance.erpnext_eta.utils import get_company_eta_connector
+from erpnext_egypt_compliance.erpnext_eta.einvoice_submitter import EInvoiceSubmitter
 
 
 class ETALog(Document):
@@ -134,3 +137,92 @@ class ETALog(Document):
                     receipt_status = eta_response["receipt"]["status"]
                     frappe.db.set_value(doc.reference_doctype, doc.reference_document, fieldname, receipt_status)
                     doc.db_set("eta_status", receipt_status)
+
+
+    @frappe.whitelist()
+    def update_documents_status(self):
+        try:
+            # Check and update document statuses from ETA submission details
+            if not self.submission_id:
+                frappe.throw("Submission ID is required to check status")
+
+            # Retrieve the connector from the first document in the child table
+            sinv_doc_company = frappe.get_value("Sales Invoice", self.documents[0], "company")
+            connector = get_company_eta_connector(sinv_doc_company)
+
+            submission_response = self._get_submission_details(connector)
+            
+            if not submission_response:
+                frappe.msgprint('No submission response')
+                return
+                
+            self._update_documents_from_submission(submission_response)
+            self.save()
+                        
+        except requests.RequestException as e:
+            frappe.log_error(f"ETA API Request Failed: {str(e)}", "ETA API Error")
+            frappe.throw(f"Failed to fetch submission details: {str(e)}")
+
+    def _get_submission_details(self, connector):
+        url = f"{connector.ETA_BASE}/documentSubmissions/{self.submission_id}"
+
+        submitter = EInvoiceSubmitter(connector)
+        page_no = len(self.documents)
+        submission_response = submitter.get_submission_details(self.submission_id, page_no)
+        return submission_response
+
+    def _update_documents_from_submission(self, submission_response):
+        # Map internal IDs to their document details
+        document_map = {
+            doc.get("internalId"): doc 
+            for doc in submission_response.get("documentSummary", [])
+        }
+        
+        # a dictionary to count document statuses
+        status_counts = {
+            "Submitted": 0,
+            "Valid": 0,
+            "Invalid": 0,
+            "Rejected": 0,
+            "Cancelled": 0
+        }
+        for doc_row in self.documents:
+            eta_doc = document_map.get(doc_row.reference_document)
+            if not eta_doc:
+                continue
+            
+            # Update the status count
+            status = eta_doc.get("status")
+            if status in status_counts:
+                status_counts[status] += 1
+            
+            doc_row.update({
+                "uuid": eta_doc.get("uuid"),
+                "eta_status": eta_doc.get("status"),
+                "long_id": eta_doc.get("longId"), 
+                "accepted": eta_doc.get("status") == "Valid",
+                "error": eta_doc.get("documentStatusReason") if eta_doc.get("documentStatusReason") else ""
+            })
+            frappe.db.set_value("Sales Invoice", doc_row.reference_document, "eta_status", status)
+        # Map ETA status to internal submission status
+        self.submission_status = {
+            "Valid": "Completed",
+            "Partially Valid": "Partially Succeeded", 
+            "In Progress": "Started",
+            "Invalid": "Failed"
+        }.get(submission_response.get("overallStatus"))
+        
+        metadata = submission_response.get("metadata", {})
+        
+        summary = [
+            f"Total Documents: {metadata.get('totalCount', 0)}",
+            f"Submitted: {status_counts['Submitted']}",
+            f"Valid Documents: {status_counts['Valid']}",
+            f"Invalid Documents: {status_counts['Invalid']}",
+            f"Rejected: {status_counts['Rejected']}",
+            f"Cancelled: {status_counts['Cancelled']}",
+        ]
+        
+        self.submission_summary = "\n".join(summary)
+        # Store full response
+        self.eta_response = json.dumps(submission_response, indent=4)
