@@ -1,5 +1,6 @@
 frappe.ui.form.on('Sales Invoice', {
 	onload(frm) {
+		frm.trigger('set_query_for_eta_sub_type');
 		let eta_wrapper = $('.title-area').append('<div id="eta-status"></div>')
 
 		// your code here
@@ -13,6 +14,17 @@ frappe.ui.form.on('Sales Invoice', {
 		frm.trigger('eta_add_cancel_button');
 	},
 	refresh(frm) {
+	},
+	set_query_for_eta_sub_type(frm) { 
+		frm.set_query("eta_tax_sub_type", "taxes", function (doc, cdt, cdn) {
+			row = locals[cdt][cdn];
+			return {
+				filters: {
+					parent_eta_tax_type: row.eta_tax_type,
+					is_group: 0
+				},
+			};
+		});
 	},
 	eta_add_download_button(frm) {
 		frm.add_custom_button('Download ETA Json', () => {
