@@ -231,7 +231,7 @@ frappe.ui.form.on('Sales Invoice', {
 								frm.set_value('eta_cancellation_reason', values.reason);
 								frm.reload_doc();
 								frappe.msgprint({
-									message: __("Cancellation request sent successfully"),
+									message: __('Invoice cancelled successfully.'),
 									alert: true,
 									indicator: 'green',
 									title: __('Success')
