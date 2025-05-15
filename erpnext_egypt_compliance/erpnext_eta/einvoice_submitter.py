@@ -53,7 +53,40 @@ class EInvoiceSubmitter:
             frappe.local.response.content_type = "application/pdf"
         else:
             frappe.throw(f"Failed to download PDF. Status code: {response.status_code}")
+    
+    def cancel_document(self, uuid, reason):
+        """Cancel a submitted document in the ETA portal
+        
+        Args:
+            uuid (str): The UUID of the document to cancel
+            reason (str): Reason for cancellation
             
+        Returns:
+            dict: The response from ETA portal
+        """
+        url = f"{self.eta_connector.ETA_BASE}/documents/state/{uuid}/state"
+        headers = self.eta_connector.get_headers()
+        
+        data = json.dumps({
+            "status": "cancelled",
+            "reason": reason
+        }).encode("utf8")
+                
+        response = self.eta_connector.session.put(url, headers=headers, data=data)
+        eta_response = frappe._dict({})
+        
+        eta_response["status_code"] = response.status_code
+        
+        # Only try to parse json if there's content and status code is not 200
+        if response.status_code != 200 and response.content:
+            try:
+                eta_response.update(response.json())
+            except json.JSONDecodeError:
+                # Empty or invalid JSON response
+                pass
+            
+        return eta_response
+        
     def _handle_exception(self, exception):
         traceback = frappe.get_traceback()
         error_doc = frappe.log_error("Submit EInvoice", message=str(exception) + "\n" + str(traceback))
