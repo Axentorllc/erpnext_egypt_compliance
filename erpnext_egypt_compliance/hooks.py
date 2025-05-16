@@ -10,6 +10,9 @@ app_email = "apps@axentor.co"
 app_license = "CC"
 
 
+after_install = "erpnext_egypt_compliance.erpnext_eta.setup.after_install"
+after_uninstall = "erpnext_egypt_compliance.erpnext_eta.setup.after_uninstall"
+
 doctype_js = {
     "Sales Invoice": "erpnext_eta/public/js/sales_invoice.js",
     "POS Invoice": "erpnext_eta/public/js/pos_invoice.js",
@@ -19,7 +22,7 @@ doctype_js = {
 
 doc_events = {
     # "Sales Invoice": {
-        # "before_submit": "erpnext_egypt_compliance.erpnext_eta.utils.before_submit_validate_eta_invoice",
+    # "before_submit": "erpnext_egypt_compliance.erpnext_eta.utils.before_submit_validate_eta_invoice",
     # },
 }
 
