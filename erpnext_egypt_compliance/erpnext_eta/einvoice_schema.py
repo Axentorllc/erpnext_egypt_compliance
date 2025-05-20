@@ -314,10 +314,10 @@ def get_invoice_asjson(docname: str, as_dict: bool=False):
     internal_id = INVOICE_RAW_DATA.get("name")
     first_row = INVOICE_RAW_DATA.get("custom_eta_more_details")[0] if INVOICE_RAW_DATA.get("custom_eta_more_details") else {}
     purchase_order_reference = INVOICE_RAW_DATA.get("po_no")
-    purchase_order_description = first_row.get("purchase_order_description") if INVOICE_RAW_DATA.get("custom_eta_more_details") else None
-    sales_order_reference = first_row.get("sales_order_reference") if INVOICE_RAW_DATA.get("custom_eta_more_details") else None
-    sales_order_description = first_row.get("sales_order_description") if INVOICE_RAW_DATA.get("custom_eta_more_details") else None
-    proforma_invoice_number = first_row.get("proforma_invoice_number") if INVOICE_RAW_DATA.get("custom_eta_more_details") else None
+    purchase_order_description = first_row.get("purchase_order_description") if INVOICE_RAW_DATA.get("custom_eta_more_details") else ""
+    sales_order_reference = first_row.get("sales_order_reference") if INVOICE_RAW_DATA.get("custom_eta_more_details") else ""
+    sales_order_description = first_row.get("sales_order_description") if INVOICE_RAW_DATA.get("custom_eta_more_details") else ""
+    proforma_invoice_number = first_row.get("proforma_invoice_number") if INVOICE_RAW_DATA.get("custom_eta_more_details") else ""
     bank_acc = first_row.get("bank_account") if INVOICE_RAW_DATA.get("custom_eta_more_details") else None
     payment = None
     if bank_acc:
