@@ -1,5 +1,6 @@
 import collections
 import json
+import re
 
 from typing import List, Dict, Optional
 
@@ -89,23 +90,112 @@ class InvoiceLine(BaseModel):
 
 
 class Delivery(BaseModel):
-    approach: str
-    packaging: str
-    dateValidity: str
-    exportPort: str
-    countryOfOrigin: str
-    grossWeight: float
-    netWeight: float
-    terms: str
+    approach: Optional[str] = Field(default=None)
+    packaging: Optional[str] = Field(default=None)
+    dateValidity: Optional[str] = Field(default=None)
+    exportPort: Optional[str] = Field(default=None)
+    countryOfOrigin: Optional[str] = Field(default=None)
+    grossWeight: Optional[float] = Field(default=None)
+    netWeight: Optional[float] = Field(default=None)
+    terms: Optional[str] = Field(default=None)
 
+
+    @classmethod
+    def get_delivery_data(cls, invoice):
+        from datetime import date, datetime
+        from frappe.core.utils import html2text
+
+        if not invoice.get("custom_eta_more_details", []):
+            return cls()
+
+        delivery = invoice.get("custom_eta_more_details")[0]
+        
+        date_validity = delivery.get("date_validity")
+
+        if isinstance(date_validity, str):
+            date_validity = datetime.strptime(date_validity, "%Y-%m-%d").strftime("%Y-%m-%dT%H:%M:%SZ")
+        elif isinstance(date_validity, date):
+            date_validity = date_validity.strftime("%Y-%m-%dT%H:%M:%SZ")
+        else:
+            date_validity = None
+
+        # strip terms
+        if delivery.get("terms"):
+            terms = frappe.get_value("Terms and Conditions", delivery.get("terms"), "terms", as_dict=True)
+            if terms:
+                delivery["terms"] = html2text(terms.get("terms"))
+
+
+        return cls(
+            approach=delivery.get("approach"),
+            packaging=delivery.get("packaging"),
+            dateValidity=date_validity,
+            exportPort=delivery.get("export_port"),
+            countryOfOrigin=delivery.get("country_of_origin"),
+            grossWeight=delivery.get("gross_weight"),
+            netWeight=delivery.get("net_weight"),
+            terms=delivery.get("terms"),
+        )
+    
 
 class Payment(BaseModel):
-    bankName: str
-    bankAddress: str
-    bankAccountNo: str
-    bankAccountIBAN: str
-    swiftCode: str
-    terms: str
+    bankName: Optional[str] = Field(default=None)
+    bankAddress: Optional[str] = Field(default=None)
+    bankAccountNo: Optional[str] = Field(default=None)
+    bankAccountIBAN: Optional[str] = Field(default=None)
+    swiftCode: Optional[str] = Field(default=None)
+    terms: Optional[str] = Field(default=None)
+
+    @validator("swiftCode", pre=True)
+    def validate_swift_code(cls, v):
+        if not v:
+            return v
+
+        v = v.strip().upper()
+
+        # Validate SWIFT code format
+        pattern = re.compile(r"^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$")
+        if not pattern.match(v):
+            raise ValueError("Invalid SWIFT code format.")
+        return v
+
+    @classmethod
+    def get_payment_data(cls, bank_account: str, terms: str | None = None):
+        from frappe.utils import strip_html
+        from frappe.contacts.doctype.address.address import get_address_display
+
+        bank_account_data = frappe.get_value("Bank Account", bank_account, ["bank", "bank_account_no", "iban",], as_dict=True)
+        swift_number = frappe.get_value("Bank", bank_account_data.get("bank"), "swift_number")
+        # strip terms
+        if terms:
+            terms = strip_html(terms)
+
+        # get Bank Address
+        address_name = frappe.get_all(
+            "Dynamic Link",
+            filters={
+                "link_doctype": "Bank",
+                "link_name": bank_account_data.get("bank"),
+                "parenttype": "Address",
+                "parentfield": "links"
+            },
+            fields=["parent"],
+            limit=1
+        )
+
+        bank_address = None
+        if address_name:
+            bank_address = frappe.get_doc("Address", address_name[0].parent)
+            bank_address = get_address_display(bank_address.as_dict()).replace("<br>", " ")
+
+        return cls(
+            bankName=bank_account_data.bank,
+            bankAddress=bank_address,
+            bankAccountNo=bank_account_data.bank_account_no,
+            bankAccountIBAN=bank_account_data.iban,
+            swiftCode=swift_number,
+            terms=terms,
+        )
 
 
 class ReceiverAddress(BaseModel):
@@ -191,11 +281,12 @@ class Invoice(BaseModel):
     extraDiscountAmount: float = Field(default=0.0)
     totalItemsDiscountAmount: float = Field(default=0.0)
     purchaseOrderReference: str = Field(default=None)
+    purchaseOrderDescription: str = Field(default=None)
     salesOrderReference: str = Field(default=None)
     salesOrderDescription: str = Field(default=None)
     proformaInvoiceNumber: str = Field(default=None)
-    payment: str = Field(default=None)
-    delivery: str = Field(default=None)
+    payment: Payment = Field(default=None)
+    delivery: Delivery = Field(default=None)
 
     @validator("dateTimeIssued", pre=True, always=True)
     def eta_datetime_format(cls, value):
@@ -221,6 +312,16 @@ def get_invoice_asjson(docname: str, as_dict: bool=False):
     date_time_issued = INVOICE_RAW_DATA.get("posting_date")
     taxpayer_activity_code = COMPANY_DATA.get("eta_default_activity_code")
     internal_id = INVOICE_RAW_DATA.get("name")
+    first_row = INVOICE_RAW_DATA.get("custom_eta_more_details")[0] if INVOICE_RAW_DATA.get("custom_eta_more_details") else {}
+    purchase_order_reference = INVOICE_RAW_DATA.get("po_no")
+    purchase_order_description = first_row.get("purchase_order_description") if INVOICE_RAW_DATA.get("custom_eta_more_details") else ""
+    sales_order_reference = first_row.get("sales_order_reference") if INVOICE_RAW_DATA.get("custom_eta_more_details") else ""
+    sales_order_description = first_row.get("sales_order_description") if INVOICE_RAW_DATA.get("custom_eta_more_details") else ""
+    proforma_invoice_number = first_row.get("proforma_invoice_number") if INVOICE_RAW_DATA.get("custom_eta_more_details") else ""
+    bank_acc = first_row.get("bank_account") if INVOICE_RAW_DATA.get("custom_eta_more_details") else None
+    payment = None
+    if bank_acc:
+        payment = Payment.get_payment_data(bank_account=bank_acc, terms=INVOICE_RAW_DATA.get("terms"))
     invoice_lines = get_invoice_lines()
     total_discount_amount = calculate_total_discount_amount(invoice_lines)
     total_sales_amount = sum([line.salesTotal for line in invoice_lines])
@@ -236,6 +337,13 @@ def get_invoice_asjson(docname: str, as_dict: bool=False):
         dateTimeIssued=date_time_issued,
         taxpayerActivityCode=taxpayer_activity_code,
         internalID=internal_id,
+        purchaseOrderReference=purchase_order_reference,
+        purchaseOrderDescription=purchase_order_description,
+        salesOrderReference=sales_order_reference,
+        salesOrderDescription=sales_order_description,
+        proformaInvoiceNumber=proforma_invoice_number,
+        payment=payment.model_dump() if payment else {},
+        delivery=Delivery.get_delivery_data(INVOICE_RAW_DATA).model_dump(),
         invoiceLines=invoice_lines,
         totalDiscountAmount=total_discount_amount,
         extraDiscountAmount=0.0,
