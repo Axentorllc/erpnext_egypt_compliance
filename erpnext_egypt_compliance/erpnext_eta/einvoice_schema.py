@@ -90,15 +90,53 @@ class InvoiceLine(BaseModel):
 
 
 class Delivery(BaseModel):
-    approach: str
-    packaging: str
-    dateValidity: str
-    exportPort: str
-    countryOfOrigin: str
-    grossWeight: float
-    netWeight: float
-    terms: str
+    approach: Optional[str] = Field(default=None)
+    packaging: Optional[str] = Field(default=None)
+    dateValidity: Optional[str] = Field(default=None)
+    exportPort: Optional[str] = Field(default=None)
+    countryOfOrigin: Optional[str] = Field(default=None)
+    grossWeight: Optional[float] = Field(default=None)
+    netWeight: Optional[float] = Field(default=None)
+    terms: Optional[str] = Field(default=None)
 
+
+    @classmethod
+    def get_delivery_data(cls, invoice):
+        from datetime import date, datetime
+        from frappe.core.utils import html2text
+
+        if not invoice.get("custom_eta_more_details", []):
+            return cls()
+
+        delivery = invoice.get("custom_eta_more_details")[0]
+        
+        date_validity = delivery.get("date_validity")
+
+        if isinstance(date_validity, str):
+            date_validity = datetime.strptime(date_validity, "%Y-%m-%d").strftime("%Y-%m-%dT%H:%M:%SZ")
+        elif isinstance(date_validity, date):
+            date_validity = date_validity.strftime("%Y-%m-%dT%H:%M:%SZ")
+        else:
+            date_validity = None
+
+        # strip terms
+        if delivery.get("terms"):
+            terms = frappe.get_value("Terms and Conditions", delivery.get("terms"), "terms", as_dict=True)
+            if terms:
+                delivery["terms"] = html2text(terms.get("terms"))
+
+
+        return cls(
+            approach=delivery.get("approach"),
+            packaging=delivery.get("packaging"),
+            dateValidity=date_validity,
+            exportPort=delivery.get("export_port"),
+            countryOfOrigin=delivery.get("country_of_origin"),
+            grossWeight=delivery.get("gross_weight"),
+            netWeight=delivery.get("net_weight"),
+            terms=delivery.get("terms"),
+        )
+    
 
 class Payment(BaseModel):
     bankName: Optional[str] = Field(default=None)
@@ -248,7 +286,7 @@ class Invoice(BaseModel):
     salesOrderDescription: str = Field(default=None)
     proformaInvoiceNumber: str = Field(default=None)
     payment: Payment = Field(default=None)
-    delivery: str = Field(default=None)
+    delivery: Delivery = Field(default=None)
 
     @validator("dateTimeIssued", pre=True, always=True)
     def eta_datetime_format(cls, value):
@@ -305,6 +343,7 @@ def get_invoice_asjson(docname: str, as_dict: bool=False):
         salesOrderDescription=sales_order_description,
         proformaInvoiceNumber=proforma_invoice_number,
         payment=payment.model_dump() if payment else {},
+        delivery=Delivery.get_delivery_data(INVOICE_RAW_DATA).model_dump(),
         invoiceLines=invoice_lines,
         totalDiscountAmount=total_discount_amount,
         extraDiscountAmount=0.0,
