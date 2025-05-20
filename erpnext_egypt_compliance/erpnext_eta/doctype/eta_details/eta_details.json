@@ -34,11 +34,13 @@
   {
    "fieldname": "purchase_order_description",
    "fieldtype": "Small Text",
+   "in_list_view": 1,
    "label": "Purchase Order Description"
   },
   {
    "fieldname": "sales_order_description",
    "fieldtype": "Small Text",
+   "in_list_view": 1,
    "label": "Sales Order Description"
   },
   {
@@ -127,7 +129,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-20 14:00:45.149889",
+ "modified": "2025-05-20 17:05:28.986817",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "ETA Details",
