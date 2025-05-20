@@ -82,7 +82,7 @@
   },
   {
    "fieldname": "date_validity",
-   "fieldtype": "Date",
+   "fieldtype": "Datetime",
    "label": "Date Validity",
    "options": "Today"
   },
@@ -127,7 +127,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-15 16:52:34.680313",
+ "modified": "2025-05-20 14:00:45.149889",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "ETA Details",
