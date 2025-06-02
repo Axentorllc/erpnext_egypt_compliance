@@ -4,7 +4,7 @@ import re
 
 from typing import List, Dict, Optional
 
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, validator, Field, root_validator
 
 import frappe
 
@@ -72,6 +72,10 @@ class InvoiceLine(BaseModel):
     valueDifference: float = Field(default=0.0)
     totalTaxableFees: float = Field(default=0.0)
     itemsDiscount: float = Field(default=0.0)
+
+    @root_validator(pre=True)
+    def validate_mandatories(cls, values):
+        return validate_mandatory_fields(cls, values)
 
     @validator("itemType")
     def item_type_must_be_one_of(cls, value, values):
@@ -243,11 +247,16 @@ class IssuerAddress(BaseModel):
     regionCity: str = Field(...)
     street: str = Field(...)
     buildingNumber: str = Field(...)
-    postalCode: Optional[str]
-    floor: Optional[str]
-    room: Optional[str]
-    landmark: Optional[str]
-    additionalInformation: Optional[str]
+    postalCode: Optional[str] = None
+    floor: Optional[str] = None
+    room: Optional[str] = None
+    landmark: Optional[str] = None
+    additionalInformation: Optional[str] = None
+
+    @root_validator(pre=True)
+    def validate_mandatories(cls, values):
+        return validate_mandatory_fields(cls, values)
+
 
 
 class Issuer(BaseModel):
@@ -255,6 +264,10 @@ class Issuer(BaseModel):
     type: str = Field(default="B")
     name: str = Field(...)
     address: IssuerAddress = Field(...)
+
+    @root_validator(pre=True)
+    def validate_mandatories(cls, values):
+        return validate_mandatory_fields(cls, values)
 
     @validator("type")
     def type_must_be_issuer(cls, value, values):
@@ -287,6 +300,10 @@ class Invoice(BaseModel):
     proformaInvoiceNumber: str = Field(default=None)
     payment: Payment = Field(default=None)
     delivery: Delivery = Field(default=None)
+
+    @root_validator(pre=True)
+    def validate_mandatories(cls, values):
+        return validate_mandatory_fields(cls, values)
 
     @validator("dateTimeIssued", pre=True, always=True)
     def eta_datetime_format(cls, value):
@@ -663,3 +680,23 @@ def get_signatures():
             value=INVOICE_RAW_DATA.get("eta_signature") if INVOICE_RAW_DATA.get("eta_signature") else "ANY",
         )
     ]
+
+def validate_mandatory_fields(cls, values):
+    required_fields = [
+        name for name, field in cls.model_fields.items() 
+        if field.is_required()
+    ]
+
+    error_fields = []
+    for field_name, value in values.items():
+
+        if isinstance(value, str):
+            value = value.strip()
+
+        if field_name in required_fields and not value:
+            error_fields.append(f"Field '{field_name}' is required")
+
+    if error_fields:
+        error_fields = "<ul>" + "".join(f"<li>{error}</li>" for error in error_fields) + "</ul>"
+        raise ValueError(error_fields)
+    return values
