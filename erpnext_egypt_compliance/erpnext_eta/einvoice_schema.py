@@ -694,7 +694,7 @@ def validate_mandatory_fields(cls, values):
             value = value.strip()
 
         if field_name in required_fields and not value:
-            error_fields.append(f"Field '{field_name}' must not be empty")
+            error_fields.append(f"Field '{field_name}' is required")
 
     if error_fields:
         error_fields = "<ul>" + "".join(f"<li>{error}</li>" for error in error_fields) + "</ul>"
