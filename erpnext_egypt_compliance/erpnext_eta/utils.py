@@ -37,7 +37,7 @@ def validate_allowed_values(value, allowed_values):
 	return value
 
 
-def eta_round(_value: float, decimal: int = 2) -> float:
+def eta_round(_value: float, decimal: int = 5) -> float:
 	"""
 	Round value to the specified number of decimal places, with a maximum of 5 decimal places.
 	If the precision is not provided, it is fetched from the precision settings for "Sales Invoice Item net_rate".
