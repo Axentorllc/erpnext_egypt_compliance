@@ -82,7 +82,7 @@ class InvoiceLine(BaseModel):
         allowed_types = ["GS1", "EGS"]
         return validate_allowed_values(value, allowed_types)
 
-    @validator("salesTotal", "netTotal")
+    @validator("salesTotal", "netTotal", "total")
     def apply_eta_round_sales_total(cls, value, values):
         return eta_round(value)
 
