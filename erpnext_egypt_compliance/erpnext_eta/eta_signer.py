@@ -10,7 +10,7 @@ from erpnext_egypt_compliance.erpnext_eta.utils import (
 
 # from erpnext_eta.erpnext_eta.utils import get_eta_invoice
 from erpnext_egypt_compliance.erpnext_eta.einvoice_schema import get_invoice_asjson
-
+import base64
 
 @frappe.whitelist()
 def get_invoice_names_to_sign(company):
@@ -53,5 +53,10 @@ def get_eta_invoice_for_signer(docname):
 
 @frappe.whitelist()
 def set_invoice_signature(docname, signature, doctype="Sales Invoice"):
+    is_valid_base64(signature)
     frappe.set_value(doctype, docname, "eta_signature", signature)
     return "Signature Received"
+
+
+def is_valid_base64(signature):
+  base64.b64decode(signature, validate=True)
