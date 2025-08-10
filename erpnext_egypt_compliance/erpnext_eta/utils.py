@@ -75,41 +75,31 @@ def autofetch_eta_status(company):
 	# get list of submitted invoices:
 	docs = frappe.get_all("Sales Invoice", filters=[["eta_status", "=", "Submitted"]], pluck="name")
 	for docname in docs:
-		connector.update_eta_docstatus(docname)
+		update_eta_docstatus(connector,docname)
 	frappe.db.commit()
 
-
-def autosubmit_signed_documents(company):
-	connector = get_company_eta_connector(company)
-	connector.submit_signed_invoices()
-
-
-def gracefully_autosubmit_signed_documents(company):
-	connector = get_company_eta_connector(company)
-	connector.gracefully_submit_signed_documents()
-
-
-def gracefully_autofetch_eta_status(company):
-	connector = get_company_eta_connector(company)
-	connector.gracefully_autofetch_eta_status()
+def update_eta_docstatus(connector, docname):
+        headers = connector.get_headers()
+        uuid = frappe.get_value("Sales Invoice", docname, "eta_uuid")
+        UUID_PATH = connector.ETA_BASE + f"/documents/{uuid}/raw"
+        eta_response = connector.session.get(UUID_PATH, headers=headers)
+        if eta_response.ok:
+            eta_response = eta_response.json()
+            frappe.db.set_value(
+                "Sales Invoice", eta_response.get("internalId"), "eta_status", eta_response.get("status")
+            )
+            return eta_response.get("status")
+        return "Didn't update Status"
 
 
 def autofetch_eta_status_process():
 	companies = frappe.get_all("Company", pluck="name")
 	for company in companies:
 		try:
-			gracefully_autofetch_eta_status(company)
+			autofetch_eta_status(company)
 		except:
 			print("An exception occurred")  # TODO handle error properly.
 
-
-def autosubmit_eta_process():
-	companies = frappe.get_all("Company", pluck="name")
-	for company in companies:
-		try:
-			gracefully_autosubmit_signed_documents(company)
-		except:
-			print("An exception occurred")  # TODO handle error properly.
 
 def create_eta_log(
 	posting_date: datetime = None,
