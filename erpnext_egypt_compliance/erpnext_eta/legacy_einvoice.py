@@ -6,31 +6,6 @@ from erpnext_egypt_compliance.erpnext_eta.utils import get_company_eta_connector
 import pytz
 
 
-def fetch_eta_status(docname):
-    sinv_doc_company = frappe.get_value("Sales Invoice", docname, "company")
-    connector = get_company_eta_connector(sinv_doc_company)
-    return connector.update_eta_docstatus(docname)
-
-
-def submit_eta_invoice(docname, inv=None):
-
-    if not inv:
-        inv = get_eta_invoice(docname)
-
-    sinv_doc_company = frappe.get_value("Sales Invoice", docname, "company")
-    connector = get_company_eta_connector(sinv_doc_company)
-    response = connector.submit_eta_documents(inv)
-    if response.get("acceptedDocuments"):
-        for doc in response.get("acceptedDocuments"):
-            if doc.get("internalId"):
-                if doc.get("internalId") == docname:
-                    return "Success, Document Accepted By ETA."
-        for doc in response.get("rejectedDocuments"):
-            if doc.get("internalId"):
-                if doc.get("internalId") == docname:
-                    return "Failed, Document Rejected By ETA."
-    return response
-
 
 def sinv_istax_disabled(inv):
     ret = False
