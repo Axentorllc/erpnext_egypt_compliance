@@ -81,7 +81,8 @@ def get_batch_invoices(company):
                         ["eta_submission_id", "=", ""],
                     ],
                     pluck="name",
-                    limit=batch_size
+                    limit=batch_size,
+                    order_by="creation asc"
                 )
             for docname in docs:
                 submit_inv = True
@@ -95,7 +96,7 @@ def get_batch_invoices(company):
                     inv = get_invoice_asjson(docname, as_dict=True)
                     einvoices.append(inv)
 
-            process_eta_invoice_submission(inv, connector, is_background_process=True)
+            process_eta_invoice_submission(einvoices, connector, is_background_process=True)
                
                  
     except Exception as e:
