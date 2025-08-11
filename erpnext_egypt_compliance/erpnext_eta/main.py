@@ -16,21 +16,6 @@ from erpnext_egypt_compliance.erpnext_eta.utils import get_company_eta_connector
 from erpnext_egypt_compliance.erpnext_eta.einvoice_submitter import EInvoiceSubmitter
 
 
-def process_eta_invoice_submission(einvoice_data, eta_connector, is_background_process=False):
-    """
-    Process ETA e-invoice submission with appropriate logging based on execution context.
-    
-    Args:
-        einvoice_data: The invoice data to be submitted
-        eta_connector: ETA connector instance for the company
-        is_background_process: Flag to determine if this is a background or interactive submission
-    """
-    if is_background_process:
-        submit_einvoice_background_logger(einvoice_data, eta_connector)
-    else:
-        submit_einvoice_feedback_logger(einvoice_data, eta_connector)
-
-
 @frappe.whitelist()
 def download_eta_inv_json(docname):
     try:
@@ -82,7 +67,6 @@ def get_batch_invoices(company):
                     ],
                     pluck="name",
                     limit=batch_size,
-                    order_by="creation asc"
                 )
             for docname in docs:
                 submit_inv = True
@@ -96,7 +80,7 @@ def get_batch_invoices(company):
                     inv = get_invoice_asjson(docname, as_dict=True)
                     einvoices.append(inv)
 
-            process_eta_invoice_submission(einvoices, connector, is_background_process=True)
+            submit_einvoice_background_logger(einvoices, connector)
                
                  
     except Exception as e:
@@ -105,12 +89,16 @@ def get_batch_invoices(company):
 
 def autosubmit_eta_batch_process():
     companies = frappe.get_all("Company", pluck="name")
-
     for company in companies:
         try:
             get_batch_invoices(company)
         except:
             print("An exception occurred")
+
+
+def autosubmit_eta_live_submission(docname, connector):
+    inv = get_invoice_asjson(docname, as_dict=True)
+    submit_einvoice_background_logger(inv, connector)
 
 
 @frappe.whitelist()
@@ -120,12 +108,10 @@ def submit_eta_invoice(docname):
         company = frappe.get_value("Sales Invoice", docname, "company")
         connector= get_company_eta_connector(company)
         inv = get_invoice_asjson(docname, as_dict=True)
-        process_eta_invoice_submission(inv, connector, is_background_process=False)
+        submit_einvoice_feedback_logger(inv, connector)
 
     except Exception as e:
         frappe.throw(_("Error submitting ETA invoice: {0}").format(str(e)), title=_("ETA Validation"))
-
-
 
 
 @frappe.whitelist()
