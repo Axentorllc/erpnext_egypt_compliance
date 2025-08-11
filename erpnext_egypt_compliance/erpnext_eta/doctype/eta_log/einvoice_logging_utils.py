@@ -13,7 +13,7 @@ def get_eta_documents(invoices: list) -> list:
 	]
 
 
-def _submit_einvoice(einvoices: Union[Dict, List[Dict]], connector, source:str ,show_msg=False):
+def _submit_einvoice(einvoices: Union[Dict, List[Dict]], connector ,show_msg=False):
 	"""
 	Submits an e-invoice using the logger.
 	Args:
