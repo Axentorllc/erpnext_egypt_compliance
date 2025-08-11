@@ -55,7 +55,33 @@ def get_eta_invoice_for_signer(docname):
 def set_invoice_signature(docname, signature, doctype="Sales Invoice"):
     is_valid_base64(signature)
     frappe.set_value(doctype, docname, "eta_signature", signature)
+    
+    company = frappe.get_value("Sales Invoice", docname, "company")
+    connector = get_company_eta_connector(company)
+    if connector and connector.enable_auto_submission_live:
+        enqueue_invoice_live_submission(docname ,connector)
+    
     return "Signature Received"
+
+
+def enqueue_invoice_live_submission(docname , connector):
+    """Enqueue invoice for background submission after signature is set"""
+    try:
+        
+            # Use Frappe's background job system
+        frappe.enqueue(
+            method="erpnext_egypt_compliance.erpnext_eta.main.autosubmit_eta_live_submission",
+            queue="short",
+            docname=docname,
+            is_background_process=True,
+            connector=connector,
+            job_name=f"eta_submission_{docname}"
+        )
+        frappe.log_error(f"Invoice {docname} queued for ETA submission")
+            
+    except Exception as e:
+        frappe.log_error(f"Failed to enqueue invoice {docname} for submission: {str(e)}")
+
 
 
 def is_valid_base64(signature):

@@ -21,11 +21,16 @@
   "access_token",
   "expires_in",
   "auto_submission_settings_section",
+  "auto_submission_mode",
+  "auto_submission_batch_section",
   "enable_eta_grace_period_validation",
   "einvoice_submission_grace_period",
   "column_break_16",
-  "enable_auto_submission",
-  "delay_in_hours"
+  "enable_auto_submission_batch",
+  "eta_batch_size",
+  "delay_in_hours",
+  "auto_submission_live_section",
+  "enable_auto_submission_live"
  ],
  "fields": [
   {
@@ -99,13 +104,7 @@
   },
   {
    "default": "0",
-   "fieldname": "enable_auto_submission",
-   "fieldtype": "Check",
-   "label": "Enable Auto Submission"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.enable_auto_submission",
+   "depends_on": "eval:doc.enable_auto_submission_batch",
    "description": "Integer representing no. of hours delayed between a signed Invoice timestamp & first attempt to submit it to the ETA Portal.",
    "fieldname": "delay_in_hours",
    "fieldtype": "Float",
@@ -119,7 +118,7 @@
    "default": "0",
    "fieldname": "einvoice_submission_grace_period",
    "fieldtype": "Float",
-   "label": "EInvoice Submission Grace Period"
+   "label": "E-Invoice Submission Grace Period"
   },
   {
    "default": "0",
@@ -138,12 +137,49 @@
    "fieldname": "client_secret_expiration_date",
    "fieldtype": "Date",
    "label": "Client Secret Expiration Date"
+  },
+  {
+   "default": "10",
+   "depends_on": "eval:doc.enable_auto_submission_batch",
+   "fieldname": "eta_batch_size",
+   "fieldtype": "Int",
+   "label": "ETA Batch Size"
+  },
+  {
+   "fieldname": "auto_submission_mode",
+   "fieldtype": "Select",
+   "label": "Auto Submission Mode",
+   "options": "Batch\nLive"
+  },
+  {
+   "depends_on": "eval:doc.auto_submission_mode==\"Batch\"\n",
+   "fieldname": "auto_submission_batch_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Submission Batch"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_auto_submission_batch",
+   "fieldtype": "Check",
+   "label": "Enable Auto Submission Batch"
+  },
+  {
+   "depends_on": "eval:doc.auto_submission_mode==\"Live\"\n",
+   "fieldname": "auto_submission_live_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Submission Live"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_auto_submission_live",
+   "fieldtype": "Check",
+   "label": "Enable Auto Submission Live"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-04 14:50:21.448094",
+ "modified": "2025-08-10 20:35:05.393458",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "ETA Connector",
@@ -163,6 +199,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

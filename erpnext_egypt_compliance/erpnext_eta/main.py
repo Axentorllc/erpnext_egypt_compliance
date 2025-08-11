@@ -3,32 +3,23 @@ import json
 import frappe
 from frappe import _
 from erpnext_egypt_compliance.erpnext_eta.einvoice_schema import get_invoice_asjson
+
 from erpnext_egypt_compliance.erpnext_eta.legacy_einvoice import (
-    fetch_eta_status as fetch_eta_status_legacy,
+    get_eta_invoice as get_eta_invoice_legacy, get_eta_inv_datetime_diff
 )
-from erpnext_egypt_compliance.erpnext_eta.legacy_einvoice import (
-    get_eta_invoice as get_eta_invoice_legacy,
-)
-from erpnext_egypt_compliance.erpnext_eta.legacy_einvoice import (
-    submit_eta_invoice as submit_eta_invoice_legacy,
-)
+
 from erpnext_egypt_compliance.erpnext_eta.utils import (
-    download_eta_invoice_json,
+    download_eta_invoice_json, update_eta_docstatus
 )
-from erpnext_egypt_compliance.erpnext_eta.doctype.eta_log.einvoice_logging_utils import submit_einvoice_using_logger
+from erpnext_egypt_compliance.erpnext_eta.doctype.eta_log.einvoice_logging_utils import submit_einvoice_feedback_logger, submit_einvoice_background_logger
 from erpnext_egypt_compliance.erpnext_eta.utils import get_company_eta_connector
 from erpnext_egypt_compliance.erpnext_eta.einvoice_submitter import EInvoiceSubmitter
 
 
 @frappe.whitelist()
 def download_eta_inv_json(docname):
-    is_pydantic_builder_enabled = frappe.db.get_single_value("ETA Settings", "pydantic_builder")
     try:
-        if is_pydantic_builder_enabled:
-                file_content = get_invoice_asjson(docname)
-        else:
-            invoice_doc = get_eta_invoice_legacy(docname)
-            file_content = json.dumps(invoice_doc, indent=4, ensure_ascii=False).encode("utf8")
+        file_content = get_invoice_asjson(docname)
 
         return download_eta_invoice_json(docname, file_content)
     except Exception as e:
@@ -54,26 +45,74 @@ def get_eta_pdf(docname):
 
 @frappe.whitelist()
 def fetch_eta_status(docname):
-    is_pydantic_builder_enabled = frappe.db.get_single_value("ETA Settings", "pydantic_builder")
-    if is_pydantic_builder_enabled:
-        return fetch_eta_status_legacy(docname)
-    else:
-        return fetch_eta_status_legacy(docname)
+    
+    company = frappe.get_value("Sales Invoice", docname, "company")
+    connector = get_company_eta_connector(company)
+    return update_eta_docstatus(connector, docname)
+    
+
+def get_batch_invoices(company):
+    try:
+        einvoices=[]
+        connector = get_company_eta_connector(company)
+        if connector.enable_auto_submission_batch:
+            batch_size=connector.eta_batch_size or 10
+            docs = frappe.get_all(
+                    "Sales Invoice",
+                    filters=[
+                        ["eta_signature", "!=", ""],
+                        ["docstatus", "=", 1],
+                        ["eta_status", "=", ""],
+                        ["eta_submission_id", "=", ""],
+                    ],
+                    pluck="name",
+                    limit=batch_size,
+                )
+            for docname in docs:
+                submit_inv = True
+                time_diff = get_eta_inv_datetime_diff(docname)
+                if time_diff < connector.delay_in_hours:
+                    submit_inv = False
+                if connector.enable_eta_grace_period_validation and time_diff > connector.einvoice_submission_grace_period:
+                    submit_inv = False
+
+                if submit_inv:
+                    inv = get_invoice_asjson(docname, as_dict=True)
+                    einvoices.append(inv)
+
+            submit_einvoice_background_logger(einvoices, connector)
+               
+                 
+    except Exception as e:
+        frappe.log_error("Auto Submission Error", f"Failed to submit e-invoice  {0}").format(str(e))
+        
+
+def autosubmit_eta_batch_process():
+    companies = frappe.get_all("Company", pluck="name")
+    for company in companies:
+        try:
+            get_batch_invoices(company)
+        except:
+            print("An exception occurred")
+
+
+def autosubmit_eta_live_submission(docname, connector):
+    inv = get_invoice_asjson(docname, as_dict=True)
+    submit_einvoice_background_logger(inv, connector)
 
 
 @frappe.whitelist()
 def submit_eta_invoice(docname):
     try:
-        is_pydantic_builder_enabled = frappe.db.get_single_value("ETA Settings", "pydantic_builder")
-        enable_eta_log = frappe.db.get_single_value("ETA Settings", "enable_eta_log")
+       
         company = frappe.get_value("Sales Invoice", docname, "company")
+        connector= get_company_eta_connector(company)
         inv = get_invoice_asjson(docname, as_dict=True)
-        if is_pydantic_builder_enabled:
-            return submit_eta_invoice_legacy(docname, inv) if not enable_eta_log else submit_einvoice_using_logger(inv, company)
-        else:
-            return submit_eta_invoice_legacy(docname, inv) if not enable_eta_log else submit_einvoice_using_logger(inv, company)
+        submit_einvoice_feedback_logger(inv, connector)
+
     except Exception as e:
         frappe.throw(_("Error submitting ETA invoice: {0}").format(str(e)), title=_("ETA Validation"))
+
 
 @frappe.whitelist()
 def cancel_eta_invoice(docname, reason):

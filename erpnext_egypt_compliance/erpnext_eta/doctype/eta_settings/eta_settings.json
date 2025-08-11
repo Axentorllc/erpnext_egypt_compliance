@@ -9,9 +9,7 @@
   "defaults_section",
   "eta_item_code",
   "column_break_4",
-  "eta_uom",
-  "pydantic_builder",
-  "enable_eta_log"
+  "eta_uom"
  ],
  "fields": [
   {
@@ -33,25 +31,13 @@
    "fieldtype": "Link",
    "label": "ETA UOM",
    "options": "ETA UOM"
-  },
-  {
-   "default": "0",
-   "fieldname": "pydantic_builder",
-   "fieldtype": "Check",
-   "label": "Pydantic Builder"
-  },
-  {
-   "default": "0",
-   "description": "if enabled, submitting an invoice to the ETA Portal system will automatically create an <b>ETA Log</b> document, allowing you to track the submission status and details.",
-   "fieldname": "enable_eta_log",
-   "fieldtype": "Check",
-   "label": "Enable ETA Log"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-12-25 13:37:24.570679",
+ "modified": "2025-08-11 10:52:51.348361",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "ETA Settings",
@@ -68,6 +54,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
