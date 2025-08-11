@@ -56,9 +56,9 @@ def _submit_einvoice(einvoices: Union[Dict, List[Dict]], connector, source:str ,
 
 
 # public wrappers for the submit functions
-def submit_einvoice_using_logger(einvoices: Union[Dict, List[Dict]], company: str):
-	return _submit_einvoice(einvoices, company ,show_msg=True)
+def submit_einvoice_feedback_logger(einvoices: Union[Dict, List[Dict]], connector):
+	return _submit_einvoice(einvoices, connector ,show_msg=True)
 
 
-def submit_einvoice_background_logger(einvoices: Union[Dict, List[Dict]], company: str):
-	return _submit_einvoice(einvoices, company, show_msg=False)
+def submit_einvoice_background_logger(einvoices: Union[Dict, List[Dict]], connector):
+	return _submit_einvoice(einvoices, connector, show_msg=False)

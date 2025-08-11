@@ -59,21 +59,21 @@ def set_invoice_signature(docname, signature, doctype="Sales Invoice"):
     company = frappe.get_value("Sales Invoice", docname, "company")
     connector = get_company_eta_connector(company)
     if connector and connector.enable_auto_submission_live:
-        enqueue_invoice_submission(docname)
+        enqueue_invoice_live_submission(docname)
     
     return "Signature Received"
 
 
-def enqueue_invoice_submission(docname , connector):
+def enqueue_invoice_live_submission(docname , connector):
     """Enqueue invoice for background submission after signature is set"""
     try:
         
             # Use Frappe's background job system
         frappe.enqueue(
-            method="erpnext_egypt_compliance.erpnext_eta.main.submit_invoice_with_logger",
+            method="erpnext_egypt_compliance.erpnext_eta.main.process_eta_invoice_submission",
             queue="default",
             docname=docname,
-            background=True,
+            is_background_process=True,
             connector=connector,
             job_name=f"eta_submission_{docname}"
         )
