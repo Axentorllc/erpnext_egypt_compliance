@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 import frappe
@@ -150,3 +150,114 @@ def parse_error_details(error_object):
 	return error_msg
 
 
+def check_unsigned_invoices_and_notify():
+	"""
+	Check for submitted invoices that haven't been signed for 2 hours and send email notifications
+	"""
+	companies = frappe.get_all("Company", pluck="name")
+	for company in companies:
+		try:
+			connector = get_company_eta_connector(company, throw_if_no_connector=False)
+			
+			# Only proceed if connector exists and submission mode is "Batch"
+			if connector and connector.submission_mode == "Batch":
+				# Calculate the cutoff time (2 hours ago)
+				cutoff_time = datetime.now() - timedelta(hours=2)
+				
+				# Get all submitted invoices without signatures that are older than 2 hours for this company
+				unsigned_invoices = frappe.get_all(
+					"Sales Invoice",
+					filters=[
+						["docstatus", "=", 1],  # Submitted
+						["eta_signature", "=", ""],  # No signature
+						["modified", "<=", cutoff_time],  # Older than 2 hours
+						["company", "=", company],  # Filter by company
+					],
+					fields=["name", "customer", "company", "posting_date", "grand_total"]
+				)
+				
+				# Only send notification if there are unsigned invoices
+				if unsigned_invoices:
+					try:
+						frappe.enqueue(
+							method=send_unsigned_invoice_notification,
+							queue="long",
+							invoices=unsigned_invoices,
+							job_name=f"unsigned_invoice_notification_{company}",
+						)
+						
+					except Exception as e:
+						frappe.log_error(f"Failed to send notification for invoices in company {company}: {str(e)}")
+				
+		except Exception as e:
+			frappe.log_error(f"Error in check_unsigned_invoices_and_notify for company {company}: {str(e)}")
+
+
+def send_unsigned_invoice_notification(invoices):
+	"""
+	Send email notification for unsigned invoice
+	"""
+	try:
+		# Get the invoice owner's email
+		user_email = frappe.db.get_value("User", frappe.session.user, "email")
+		
+		if not user_email:
+			frappe.log_error(f"No email found for user {user_email}")
+			return
+		
+		# Prepare email content
+		subject = f"Urgent: Invoices requires ETA signature"
+		
+		# Build the invoice table
+		invoice_rows = ""
+		for invoice in invoices:
+			invoice_rows += f"""
+			<tr>
+				<td><a href="{frappe.utils.get_url()}/app/sales-invoice/{invoice.name}">{invoice.name}</a></td>
+				<td>{invoice.customer}</td>
+				<td>{invoice.company}</td>
+				<td>{invoice.posting_date}</td>
+				<td>{invoice.grand_total}</td>
+			</tr>
+			"""
+		
+		message = f"""
+		<p>Dear User,</p>
+		
+		<p>This is a reminder that the following  invoice/s been submitted but not signed for over 2 hours:</p>
+		
+		<table border="1" style="border-collapse: collapse; margin: 10px 0; width: 100%;">
+			<thead style="background-color: #f8f9fa;">
+				<tr>
+					<th style="padding: 8px; text-align: left;">Invoice Number</th>
+					<th style="padding: 8px; text-align: left;">Customer</th>
+					<th style="padding: 8px; text-align: left;">Company</th>
+					<th style="padding: 8px; text-align: left;">Posting Date</th>
+					<th style="padding: 8px; text-align: left;">Amount</th>
+				</tr>
+			</thead>
+			<tbody>
+				{invoice_rows}
+			</tbody>
+		</table>
+		
+		<p><strong style="color: red;">Action Required:</strong> Please sign 'these invoice/s immediately to comply with ETA requirements.</p>
+		
+		<p>You can click on any invoice number in the table above to access it directly.</p>
+		
+		<p>Best regards,<br>ETA Compliance System</p>
+		"""
+		
+		# Send the email
+		frappe.sendmail(
+			recipients=[user_email],
+			subject=subject,
+			message=message,
+			header=["ETA Signature Reminder", "orange"]
+		)
+		
+		frappe.log_error(f"Notification sent to {user_email} for invoices needing signature.")
+		
+	except Exception as e:
+		frappe.log_error(f"Failed to send email for invoices: {str(e)}")
+		raise
