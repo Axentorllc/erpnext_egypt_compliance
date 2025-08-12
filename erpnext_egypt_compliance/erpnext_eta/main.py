@@ -55,7 +55,7 @@ def get_batch_invoices(company):
     try:
         einvoices=[]
         connector = get_company_eta_connector(company)
-        if connector.enable_auto_submission_batch:
+        if connector.submission_mode=="Batch":
             batch_size=connector.eta_batch_size or 10
             docs = frappe.get_all(
                     "Sales Invoice",
