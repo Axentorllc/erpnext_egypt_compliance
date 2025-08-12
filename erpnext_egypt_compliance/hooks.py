@@ -50,6 +50,7 @@ scheduler_events = {
     "hourly_long": [
         "erpnext_egypt_compliance.erpnext_eta.main.autosubmit_eta_batch_process",
         "erpnext_egypt_compliance.erpnext_eta.utils.autofetch_eta_status_process",
+        "erpnext_egypt_compliance.erpnext_eta.utils.check_unsigned_invoices_and_notify",
     ],
 }
 
