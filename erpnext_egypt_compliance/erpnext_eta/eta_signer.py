@@ -58,7 +58,7 @@ def set_invoice_signature(docname, signature, doctype="Sales Invoice"):
     
     company = frappe.get_value("Sales Invoice", docname, "company")
     connector = get_company_eta_connector(company)
-    if connector and connector.enable_auto_submission_live:
+    if connector and connector.submission_mode=='live':
         enqueue_invoice_live_submission(docname ,connector)
     
     return "Signature Received"
