@@ -38,7 +38,7 @@ This integration equips ERPNext users with the necessary tools to comply with Eg
 cd /path/to/your/frappe-bench
 
 # Install the app using bench
-bench get-app erpnext_egypt_compliance https://github.com/your-repo/erpnext_egypt_compliance.git
+bench get-app erpnext_egypt_compliance https://github.com/Axentorllc/erpnext_egypt_compliance.git
 
 # Install the app on your site
 bench --site your-site.com install-app erpnext_egypt_compliance
@@ -99,11 +99,11 @@ To verify the installation:
 
 ## 📚 Documentation
 
-For detailed documentation, visit: [EG Compliance Documentation](https://axe-docs.frappe.cloud/EG%20Compliance/Introduction)
+For detailed documentation, visit: [EG Compliance Documentation](https://docs.axentor.app/EG%20Compliance/Introduction)
 
 ## 📹 Videos
 
-- [ERPNext Egypt Compliance App by Axentor](https://axe-docs.frappe.cloud/EG%20Compliance/Videos)
+- [ERPNext Egypt Compliance App by Axentor](https://docs.axentor.app/EG%20Compliance/erpnext-egypt-compliance-app-by-axentor)
 
 ## 🤝 Contributing
 
