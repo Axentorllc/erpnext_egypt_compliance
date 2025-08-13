@@ -73,7 +73,6 @@ def enqueue_invoice_live_submission(docname , connector):
             method="erpnext_egypt_compliance.erpnext_eta.main.autosubmit_eta_live_submission",
             queue="short",
             docname=docname,
-            is_background_process=True,
             connector=connector,
             job_name=f"eta_submission_{docname}"
         )
