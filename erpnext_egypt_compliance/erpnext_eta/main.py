@@ -55,32 +55,35 @@ def get_batch_invoices(company):
     try:
         einvoices=[]
         connector = get_company_eta_connector(company)
-        if connector.submission_mode=="Batch" or connector.submission_mode=="Live":
-            batch_size=connector.eta_batch_size or 10
-            docs = frappe.get_all(
-                    "Sales Invoice",
-                    filters=[
-                        ["eta_signature", "!=", ""],
-                        ["docstatus", "=", 1],
-                        ["eta_status", "=", ""],
-                        ["eta_submission_id", "=", ""],
-                    ],
-                    pluck="name",
-                    limit=batch_size,
-                )
-            for docname in docs:
-                submit_inv = True
-                time_diff = get_eta_inv_datetime_diff(docname)
-                if time_diff < connector.delay_in_hours:
-                    submit_inv = False
-                if connector.enable_eta_grace_period_validation and time_diff > connector.einvoice_submission_grace_period:
-                    submit_inv = False
+        
+        if connector.submission_mode=="Manual":
+            return
 
-                if submit_inv:
-                    inv = get_invoice_asjson(docname, as_dict=True)
-                    einvoices.append(inv)
+        batch_size=connector.eta_batch_size or 10
+        docs = frappe.get_all(
+                "Sales Invoice",
+                filters=[
+                    ["eta_signature", "!=", ""],
+                    ["docstatus", "=", 1],
+                    ["eta_status", "=", ""],
+                    ["eta_submission_id", "=", ""],
+                ],
+                pluck="name",
+                limit=batch_size,
+            )
+        for docname in docs:
+            submit_inv = True
+            time_diff = get_eta_inv_datetime_diff(docname)
+            if time_diff < connector.delay_in_hours:
+                submit_inv = False
+            if connector.enable_eta_grace_period_validation and time_diff > connector.einvoice_submission_grace_period:
+                submit_inv = False
 
-            submit_einvoice_background_logger(einvoices, connector)
+            if submit_inv:
+                inv = get_invoice_asjson(docname, as_dict=True)
+                einvoices.append(inv)
+
+        submit_einvoice_background_logger(einvoices, connector)
                
                  
     except Exception as e:
