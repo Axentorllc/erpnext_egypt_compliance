@@ -263,7 +263,8 @@ def check_not_submitted_invoices_and_notify():
 					"Sales Invoice",
 					filters=[
 						["docstatus", "=", 1],  # Submitted
-						["eta_status", "in", ["", None, "Not Submitted"]],  # Not submitted to ETA
+						["eta_signature", "not in", ["", None]], # Signed
+						["eta_uuid", "in", ["", None]],  # Not submitted to ETA
 						["modified", "<=", cutoff_time],  # Older than 2 hours
 						["company", "=", company],  # Filter by company
 					],
