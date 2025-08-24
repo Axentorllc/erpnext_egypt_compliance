@@ -18,9 +18,9 @@ doctype_js = {
 }
 
 doc_events = {
-    # "Sales Invoice": {
-        # "before_submit": "erpnext_egypt_compliance.erpnext_eta.utils.before_submit_validate_eta_invoice",
-    # },
+    "Sales Invoice": {
+        "before_submit": "erpnext_egypt_compliance.erpnext_eta.pre_validation.validate_eta_invoice_before_submit",
+    },
 }
 
 
@@ -51,6 +51,7 @@ scheduler_events = {
         "erpnext_egypt_compliance.erpnext_eta.main.autosubmit_eta_batch_process",
         "erpnext_egypt_compliance.erpnext_eta.utils.autofetch_eta_status_process",
         "erpnext_egypt_compliance.erpnext_eta.utils.check_unsigned_invoices_and_notify",
+        "erpnext_egypt_compliance.erpnext_eta.utils.check_not_submitted_invoices_and_notify",
     ],
 }
 
