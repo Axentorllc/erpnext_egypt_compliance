@@ -5,7 +5,7 @@ from frappe import _
 from erpnext_egypt_compliance.erpnext_eta.einvoice_schema import get_invoice_asjson
 
 from erpnext_egypt_compliance.erpnext_eta.legacy_einvoice import (
-    get_eta_invoice as get_eta_invoice_legacy, get_eta_inv_datetime_diff
+   get_eta_inv_datetime_diff
 )
 
 from erpnext_egypt_compliance.erpnext_eta.utils import (
