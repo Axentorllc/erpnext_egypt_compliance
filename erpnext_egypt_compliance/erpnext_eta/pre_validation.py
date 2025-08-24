@@ -14,11 +14,7 @@ def validate_eta_invoice_before_submit(doc, method=None):
     connector = get_company_eta_connector(company)
     
     # Skip if signature start date not reached
-    if connector.signature_start_date and getdate(nowdate()) < getdate(connector.signature_start_date):
-        return
-    
-    # Only validate if the company has ETA integration enabled
-    if not has_eta_details(doc.company):
+    if connector.signature_start_date and getdate(doc.posting_date) < getdate(connector.signature_start_date):
         return
     
     try:
@@ -34,27 +30,6 @@ def validate_eta_invoice_before_submit(doc, method=None):
             ),
             title=_("ETA Validation Failed")
         )
-
-
-def has_eta_details(company):
-    """
-    Check if the company has ETA integration enabled by checking for basic ETA configuration.
-    """
-    try:
-        company_doc = frappe.get_doc("Company", company)
-        
-        # Check if company has basic ETA configuration
-        if (company_doc.get("eta_issuer_type") and
-            company_doc.get("eta_tax_id") and 
-            company_doc.get("eta_issuer_name") and 
-            company_doc.get("eta_default_branch") and
-            company_doc.get("eta_default_activity_code")):
-            return True
-            
-        return False
-        
-    except Exception:
-        return False
 
 
 def parse_pydantic_errors(validation_error):
