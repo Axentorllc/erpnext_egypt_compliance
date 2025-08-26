@@ -433,7 +433,8 @@ def get_receiver():
     """Get the invoice receiver."""
     customer = frappe.get_doc("Customer", INVOICE_RAW_DATA.get("customer")).as_dict()
     customer_type = customer.get("eta_receiver_type", "P")
-    customer_id = customer.get("tax_id", "").replace("-", "") if customer_type == "B" else None
+    customer_id = validate_tax_id(customer.get("tax_id", ""), customer_type) 
+
     eta_receiver = Receiver(
         type=customer_type,
         id=customer_id,
@@ -453,6 +454,20 @@ def get_receiver():
     )
     return eta_receiver
 
+def validate_tax_id(tax_id: str, customer_type: str) -> str:
+    if not tax_id:
+        return None
+    
+    tax_id = re.sub(r"[^A-Za-z0-9]", "", tax_id)
+
+    if customer_type == "B":
+        # Must be exactly 9 digits
+        return tax_id if re.fullmatch(r"\d{9}", tax_id) else None
+
+    elif customer_type == "P":
+        # Must be exactly 14 digits
+        return tax_id if re.fullmatch(r"\d{14}", tax_id) else None
+    
 
 def _get_item_total(_net_total: float, _taxable_items) -> float:
     return sum([_net_total, sum(tax.amount for tax in _taxable_items)])
