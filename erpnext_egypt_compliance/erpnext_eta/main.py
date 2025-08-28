@@ -83,7 +83,7 @@ def get_batch_invoices(company):
                 inv = get_invoice_asjson(docname, as_dict=True)
                 einvoices.append(inv)
 
-        submit_einvoice_background_logger(einvoices, connector)
+        submit_einvoice_background_logger(einvoices, connector , submitted_by="Agent")
                
                  
     except Exception as e:
@@ -91,30 +91,54 @@ def get_batch_invoices(company):
         
 
 def autosubmit_eta_batch_process():
+    
     companies = frappe.get_all("Company", pluck="name")
     for company in companies:
         try:
             get_batch_invoices(company)
-        except:
-            print("An exception occurred")
+        except Exception as e:
+            frappe.log_error("Auto Submission Error").format(str(e))
 
 
 def autosubmit_eta_live_submission(docname, connector):
     inv = get_invoice_asjson(docname, as_dict=True)
-    submit_einvoice_background_logger(inv, connector)
+    submit_einvoice_background_logger(inv, connector, submitted_by="Agent")
 
 
 @frappe.whitelist()
-def submit_eta_invoice(docname):
+def submit_eta_invoice(docname, submission_reason=None):
     try:
        
+        submitted_by = frappe.session.user
         company = frappe.get_value("Sales Invoice", docname, "company")
         connector= get_company_eta_connector(company)
         inv = get_invoice_asjson(docname, as_dict=True)
-        submit_einvoice_feedback_logger(inv, connector)
+        submit_einvoice_feedback_logger(inv, connector, submitted_by, submission_reason)
 
     except Exception as e:
         frappe.throw(_("Error submitting ETA invoice: {0}").format(str(e)), title=_("ETA Validation"))
+
+
+@frappe.whitelist()
+def check_existing_eta_logs(docname):
+    """Check if there are existing ETA logs for this invoice"""
+    try:
+        existing_logs = frappe.get_all(
+            "ETA Log Documents",
+            filters={
+                "reference_doctype": "Sales Invoice",
+                "reference_document": docname
+            },
+            
+            fields=["parent"],
+            limit=1
+        )
+        
+        return {"has_existing_logs": len(existing_logs) > 0}
+        
+    except Exception as e:
+        frappe.log_error(f"Error checking existing ETA logs: {str(e)}")
+        return {"has_existing_logs": False}
 
 
 @frappe.whitelist()

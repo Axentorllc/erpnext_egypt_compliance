@@ -72,19 +72,58 @@ frappe.ui.form.on('Sales Invoice', {
 	},
 	eta_add_submit_button(frm) {
 		frm.add_custom_button('Submit to ETA', () => {
+			// First check if there are existing ETA logs for this invoice
 			frappe.call({
-				method: 'erpnext_egypt_compliance.erpnext_eta.main.submit_eta_invoice',
-				args: {	docname: frm.doc.name },
+				method: 'erpnext_egypt_compliance.erpnext_eta.main.check_existing_eta_logs',
+				args: { docname: frm.doc.name },
 				callback: function(r) {
-					if (r.message) {
-						console.log(r.message)
-						frappe.show_alert(r.message)
-						frm.trigger('fetch_eta_status')
-						// cur_frm.reload_doc();
+					if (r.message && r.message.has_existing_logs) {
+						// Show popup asking for submission reason
+						frappe.prompt([
+							{
+								label: 'Submission Reason',
+								fieldname: 'submission_reason',
+								fieldtype: 'Small Text',
+								reqd: 1,
+								description: 'Please provide a reason for resubmitting this invoice to ETA'
+							}
+						],
+						function(values) {
+							// Submit with reason
+							frappe.call({
+								method: 'erpnext_egypt_compliance.erpnext_eta.main.submit_eta_invoice',
+								args: {	
+									docname: frm.doc.name,
+									submission_reason: values.submission_reason
+								},
+								callback: function(r) {
+									if (r.message) {
+										console.log(r.message)
+										frappe.show_alert(r.message)
+										frm.trigger('fetch_eta_status')
+									}
+								}
+							})
+						},
+						'Resubmission Reason',
+						'Submit'
+						);
+					} else {
+						// No existing logs, submit directly without reason
+						frappe.call({
+							method: 'erpnext_egypt_compliance.erpnext_eta.main.submit_eta_invoice',
+							args: {	docname: frm.doc.name },
+							callback: function(r) {
+								if (r.message) {
+									console.log(r.message)
+									frappe.show_alert(r.message)
+									frm.trigger('fetch_eta_status')
+								}
+							}
+						})
 					}
 				}
 			})
-
 		}, "ETA")
 	},
 	eta_fetch_status_button(frm) {
