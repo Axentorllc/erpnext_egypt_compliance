@@ -16,6 +16,8 @@
   "documents",
   "submission_summary_section",
   "submission_status",
+  "submitted_by",
+  "submission_reason",
   "submission_summary",
   "column_break_yzif",
   "submission_id",
@@ -110,11 +112,23 @@
    "fieldtype": "Data",
    "label": "ETA Submission Status",
    "read_only": 1
+  },
+  {
+   "fieldname": "submitted_by",
+   "fieldtype": "Data",
+   "label": "Submitted By"
+  },
+  {
+   "description": "Reason provided when the invoice is re-submitted to ETA",
+   "fieldname": "submission_reason",
+   "fieldtype": "Small Text",
+   "label": "Submission Reason"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-14 17:28:19.833977",
+ "modified": "2025-08-28 13:47:38.922082",
  "modified_by": "Administrator",
  "module": "ERPNext ETA",
  "name": "ETA Log",
@@ -133,6 +147,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

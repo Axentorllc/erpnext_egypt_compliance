@@ -13,12 +13,13 @@ def get_eta_documents(invoices: list) -> list:
 	]
 
 
-def _submit_einvoice(einvoices: Union[Dict, List[Dict]], connector ,show_msg=False):
+def _submit_einvoice(einvoices: Union[Dict, List[Dict]], connector ,submitted_by ,show_msg=False, submission_reason=None):
 	"""
 	Submits an e-invoice using the logger.
 	Args:
 		einvoice (Union[Dict, List[Dict]]): The e-invoice data to be submitted. Can be a single dictionary or a list of dictionaries.
 		company (str): The name of the company for which the e-invoice is being submitted.
+		submission_reason (str): Optional reason for submission when resubmitting
 	Returns:
 		dict: The response from the ETA after submitting the e-invoice.
 	"""
@@ -32,7 +33,7 @@ def _submit_einvoice(einvoices: Union[Dict, List[Dict]], connector ,show_msg=Fal
 
 		# Prepare ETA log
 		documents = get_eta_documents(einvoices)
-		eta_log = create_eta_log(documents=documents, from_doctype="Sales Invoice")
+		eta_log = create_eta_log(documents=documents, from_doctype="Sales Invoice", submitted_by=submitted_by, submission_reason=submission_reason)
 
 		# Submit documents
 		submitter = EInvoiceSubmitter(connector)
@@ -56,9 +57,9 @@ def _submit_einvoice(einvoices: Union[Dict, List[Dict]], connector ,show_msg=Fal
 
 
 # public wrappers for the submit functions
-def submit_einvoice_feedback_logger(einvoices: Union[Dict, List[Dict]], connector):
-	return _submit_einvoice(einvoices, connector ,show_msg=True)
+def submit_einvoice_feedback_logger(einvoices: Union[Dict, List[Dict]], connector, submitted_by, submission_reason=None):
+	return _submit_einvoice(einvoices, connector , submitted_by ,show_msg=True, submission_reason=submission_reason)
 
 
-def submit_einvoice_background_logger(einvoices: Union[Dict, List[Dict]], connector):
-	return _submit_einvoice(einvoices, connector, show_msg=False)
+def submit_einvoice_background_logger(einvoices: Union[Dict, List[Dict]], connector, submitted_by="Agent", submission_reason=None):
+	return _submit_einvoice(einvoices, connector, submitted_by ,show_msg=False, submission_reason=submission_reason)
