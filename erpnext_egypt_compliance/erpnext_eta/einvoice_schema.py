@@ -217,7 +217,7 @@ class ReceiverAddress(BaseModel):
 
 class Receiver(BaseModel):
     type: str
-    id: str = Field(default=None)
+    id: Optional[str] = None
     name: str = Field(...)
     address: ReceiverAddress = Field(...)
 
@@ -227,11 +227,11 @@ class Receiver(BaseModel):
         return validate_allowed_values(value, allowed_types)
 
     @validator("id", pre=True, always=True)
-    def id_default_values(cls, value, values):
-        if values.get("type") == "P" and INVOICE_RAW_DATA.get("grand_total") >= 45000:
-            customer_tax_id = frappe.get_doc("Customer", INVOICE_RAW_DATA.get("customer")).get("tax_id")
-            return customer_tax_id.replace("-", "")
-        return value
+    def normalize_id(cls, value):
+        """Strip dashes/spaces, allow None if missing"""
+        if not value:
+            return None
+        return re.sub(r"[^A-Za-z0-9]", "", value)
 
     @validator("name")
     def name_default_values(cls, value, values):
@@ -324,6 +324,7 @@ def get_invoice_asjson(docname: str, as_dict: bool=False):
 
     issuer = get_issuer()
     receiver = get_receiver()
+    validate_receiver_compliance(receiver)
     document_type = "C" if INVOICE_RAW_DATA.get("is_return") else "I"
     document_type_version = "1.0" if INVOICE_RAW_DATA.eta_signature else "0.9"
     date_time_issued = INVOICE_RAW_DATA.get("posting_date")
@@ -433,11 +434,11 @@ def get_receiver():
     """Get the invoice receiver."""
     customer = frappe.get_doc("Customer", INVOICE_RAW_DATA.get("customer")).as_dict()
     customer_type = customer.get("eta_receiver_type", "P")
-    customer_id = validate_tax_id(customer.get("tax_id", ""), customer_type) 
+    # customer_id = validate_tax_id(customer.get("tax_id", ""), customer_type) 
 
     eta_receiver = Receiver(
         type=customer_type,
-        id=customer_id,
+        id=customer.get("tax_id"),
         name=customer.get("customer_name"),
         address=ReceiverAddress(
             country="EG",
@@ -453,6 +454,22 @@ def get_receiver():
         ),
     )
     return eta_receiver
+
+def validate_receiver_compliance(receiver: Receiver):
+    """Validate ETA compliance rules for receiver before submission."""
+
+    if receiver.type == "B":
+        if not receiver.id or not re.fullmatch(r"\d{9}", receiver.id):
+            raise ValueError("Business customers must have a valid 9-digit Tax ID")
+
+    elif receiver.type == "P":
+        if INVOICE_RAW_DATA.get("grand_total") >= 50000:
+            if not receiver.id or not re.fullmatch(r"\d{14}", receiver.id):
+                raise ValueError("Individuals with invoices ≥ 50,000 EGP must have a valid 14-digit Tax ID")
+
+    # Foreign ("F") → no strict rule for now
+    return True
+
 
 def validate_tax_id(tax_id: str, customer_type: str) -> str:
     if not tax_id:
