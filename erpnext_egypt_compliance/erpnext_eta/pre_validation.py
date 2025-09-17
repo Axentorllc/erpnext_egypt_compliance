@@ -13,6 +13,9 @@ def validate_eta_invoice_before_submit(doc, method=None):
     company = frappe.get_value("Sales Invoice", doc.name, "company")
     connector = get_company_eta_connector(company)
     
+    if not connector:
+        return
+    
     # Skip if signature start date not reached
     if connector.signature_start_date and getdate(doc.posting_date) < getdate(connector.signature_start_date):
         return
