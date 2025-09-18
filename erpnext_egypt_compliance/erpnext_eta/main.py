@@ -14,7 +14,7 @@ from erpnext_egypt_compliance.erpnext_eta.utils import (
 from erpnext_egypt_compliance.erpnext_eta.doctype.eta_log.einvoice_logging_utils import submit_einvoice_feedback_logger, submit_einvoice_background_logger
 from erpnext_egypt_compliance.erpnext_eta.utils import get_company_eta_connector
 from erpnext_egypt_compliance.erpnext_eta.einvoice_submitter import EInvoiceSubmitter
-
+from frappe.utils import nowdate
 
 @frappe.whitelist()
 def download_eta_inv_json(docname):
@@ -53,6 +53,7 @@ def fetch_eta_status(docname):
 
 def get_batch_invoices(company):
     try:
+        
         einvoices=[]
         connector = get_company_eta_connector(company)
         
@@ -61,23 +62,28 @@ def get_batch_invoices(company):
 
         batch_size=connector.eta_batch_size or 10
         docs = frappe.get_all(
-                "Sales Invoice",
-                filters=[
-                    ["eta_signature", "!=", ""],
-                    ["docstatus", "=", 1],
-                    ["eta_status", "=", ""],
-                    ["eta_submission_id", "=", ""],
-                ],
-                pluck="name",
-                limit=batch_size,
-            )
+            "Sales Invoice",
+            filters=[
+                ["eta_signature", "!=", ""],
+                ["docstatus", "=", 1],
+                ["eta_status", "=", ""],
+                ["eta_submission_id", "=", ""],
+                ["posting_date", "=", nowdate()],  # ✅ only today's invoices
+            ],
+            pluck="name",
+            limit=batch_size,
+        )
+
         for docname in docs:
             submit_inv = True
             time_diff = get_eta_inv_datetime_diff(docname)
-            if time_diff < connector.delay_in_hours:
-                submit_inv = False
-            if connector.enable_eta_grace_period_validation and time_diff > connector.einvoice_submission_grace_period:
-                submit_inv = False
+            
+            if connector.delay_in_hours > 0:
+                if time_diff < connector.delay_in_hours:
+                    submit_inv = False
+
+            # if connector.enable_eta_grace_period_validation and time_diff > connector.einvoice_submission_grace_period:
+            #     submit_inv = False
 
             if submit_inv:
                 inv = get_invoice_asjson(docname, as_dict=True)
