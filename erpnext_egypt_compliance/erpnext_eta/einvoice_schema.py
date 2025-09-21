@@ -508,10 +508,10 @@ def validate_receiver_compliance(receiver: Receiver):
             )
 
     elif receiver.type == "P":
-        if INVOICE_RAW_DATA.get("grand_total") >= 50000:
+        if INVOICE_RAW_DATA.get("grand_total") >= 25000:
             if not receiver.id or not re.fullmatch(r"\d{14}", receiver.id):
                 frappe.throw(
-                    _("Individuals with invoices ≥ 50,000 EGP must have a valid 14-digit Tax ID"),
+                    _("Individuals with invoices ≥ 25,000 EGP must have a valid 14-digit Tax ID"),
                     title=_("ETA Validation")
                 )
 
