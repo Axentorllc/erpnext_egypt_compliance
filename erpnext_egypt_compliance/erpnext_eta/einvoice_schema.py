@@ -435,7 +435,7 @@ def get_receiver():
     customer_type = customer.get("eta_receiver_type", "P")
     customer_id = customer.get("tax_id", "").replace("-", "")
 
-    
+# TODO Investigate a better pydantic way to do this validation
     if customer_type == "B":
         if not customer_id:
             frappe.throw(
@@ -453,12 +453,7 @@ def get_receiver():
             title=_("ETA Validation"),
         )
 
-    
-    eta_receiver = Receiver(
-        type=customer_type,
-        id=customer_id,
-        name=customer.get("customer_name"),
-        address=ReceiverAddress(
+    address = ReceiverAddress(
             country="EG",
             governate="Egypt",
             regionCity="EG City",
@@ -469,7 +464,35 @@ def get_receiver():
             # room=POS_INVOICE_RAW_DATA.get("room"),
             # landmark=POS_INVOICE_RAW_DATA.get("landmark"),
             # additionalInformation=POS_INVOICE_RAW_DATA.get("additional_information"),
-        ),
+        )
+    
+    customer_address_name = customer.get("customer_primary_address")
+    if customer_type == "F" and not customer_address_name:
+        frappe.throw(
+            _("Customer {0} must have a primary address.").format(customer.get("name")),
+            title=_("ETA Validation"),
+        )
+
+    if customer_address_name:
+        customer_address = frappe.get_doc("Address", customer_address_name)
+        address = ReceiverAddress(
+            country=frappe.db.get_value("Country", customer_address.country, "code"),
+            governate=customer_address.state,
+            regionCity=customer_address.city,
+            street=customer_address.address_line1,
+            buildingNumber=customer_address.building_number or "B0"
+            # postalCode=customer_address.pincode or None,
+            # floor=customer_address.floor or None,
+            # room=customer_address.room or None,
+            # landmark=customer_address.landmark or None,
+            # additionalInformation=customer_address.address_line2 or None,
+        )
+
+    eta_receiver = Receiver(
+        type=customer_type,
+        id=customer_id,
+        name=customer.get("customer_name"),
+        address=address,
     )
     return eta_receiver
 
