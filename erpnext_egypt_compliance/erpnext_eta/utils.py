@@ -8,8 +8,8 @@ import json
 
 
 def download_eta_invoice_json(docname, file_content):
-	is_pydantic_builder = frappe.db.get_single_value("ETA Settings",  "pydantic_builder")
-	frappe.local.response.filename = f"{'PydanticBuilder-' if is_pydantic_builder else ''}ETA-{docname}.json"
+	# is_pydantic_builder = frappe.db.get_single_value("ETA Settings",  "pydantic_builder")
+	frappe.local.response.filename = f"ETA-{docname}.json"
 	frappe.local.response.filecontent = file_content
 	frappe.local.response.type = "download"
 

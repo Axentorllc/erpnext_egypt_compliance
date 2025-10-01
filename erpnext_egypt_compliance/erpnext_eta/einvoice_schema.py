@@ -433,7 +433,27 @@ def get_receiver():
     """Get the invoice receiver."""
     customer = frappe.get_doc("Customer", INVOICE_RAW_DATA.get("customer")).as_dict()
     customer_type = customer.get("eta_receiver_type", "P")
-    customer_id = customer.get("tax_id", "").replace("-", "") if customer_type == "B" else None
+    customer_id = customer.get("tax_id", "").replace("-", "")
+
+    
+    if customer_type == "B":
+        if not customer_id:
+            frappe.throw(
+                _("Customer {0} must have a Tax ID to be used as Business receiver.").format(customer.get("name")),
+                title=_("ETA Validation"),
+            )
+    if customer_type == "P" and INVOICE_RAW_DATA.get("grand_total") >= 45000 and not re.match(r"^\d{14}$", customer_id):
+            frappe.throw(
+                _("Customer {0} must have a valid Tax ID (14 digits) to be used as Business receiver for invoices with grand total equal or above 45,000 EGP.").format(customer.get("name")),
+                title=_("ETA Validation"),
+            )
+    if customer_type == "F" and not customer_id:
+        frappe.throw(
+            _("Customer {0} must have a Tax ID to be used as Foreign receiver.").format(customer.get("name")),
+            title=_("ETA Validation"),
+        )
+
+    
     eta_receiver = Receiver(
         type=customer_type,
         id=customer_id,
