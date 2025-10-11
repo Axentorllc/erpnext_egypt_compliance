@@ -560,14 +560,13 @@ def _get_item_taxable_items(_item_data: Dict):
 
 
 def _get_sales_and_net_totals(_item_data: Dict):
-    is_foreign_currency = INVOICE_RAW_DATA.get("_foreign_company_currency")
 
     item_base_amount = _item_data.get("base_amount")
-    item_exchange_rate = _item_data.get("_exchange_rate") or 1
+    item_exchange_rate = INVOICE_RAW_DATA.get("conversion_rate") or _item_data.get("_exchange_rate") or 1
     item_net_amount = _item_data.get("net_amount")
 
-    if is_foreign_currency:
-        _sales_total = _net_total = item_base_amount * item_exchange_rate
+    if INVOICE_RAW_DATA.get("currency") == "EGP":
+        _sales_total = _net_total = item_base_amount
     else:
         _sales_total = _net_total = item_net_amount * item_exchange_rate
 
@@ -676,16 +675,16 @@ def calculate_total_discount_amount(_invoice_lines):
 
 
 def get_net_total_amount():
-    is_foreign_currency = INVOICE_RAW_DATA.get("_foreign_company_currency")
+    is_foreign_currency = INVOICE_RAW_DATA.get("conversion_rate") or INVOICE_RAW_DATA.get("_foreign_company_currency")
 
     _base_total = INVOICE_RAW_DATA.get("base_total")
     _net_total = INVOICE_RAW_DATA.get("net_total")
     _base_grand_total = INVOICE_RAW_DATA.get("base_grand_total")
-    _exchange_rate = INVOICE_RAW_DATA.get("_exchange_rate") or 1
+    _exchange_rate = INVOICE_RAW_DATA.get("conversion_rate") or INVOICE_RAW_DATA.get("_exchange_rate") or 1
 
     if is_foreign_currency:
-        _net_amount = _base_total * _exchange_rate
-        _total_amount = _net_total * _exchange_rate
+        _net_amount = _base_total
+        _total_amount = _base_total 
     else:
         _net_amount = _net_total * _exchange_rate
         _total_amount = _base_grand_total
