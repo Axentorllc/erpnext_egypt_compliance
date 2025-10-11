@@ -227,11 +227,11 @@ class Receiver(BaseModel):
         return validate_allowed_values(value, allowed_types)
 
     @validator("id", pre=True, always=True)
-    def id_default_values(cls, value, values):
-        if values.get("type") == "P" and INVOICE_RAW_DATA.get("grand_total") >= 45000:
-            customer_tax_id = frappe.get_doc("Customer", INVOICE_RAW_DATA.get("customer")).get("tax_id")
-            return customer_tax_id.replace("-", "")
-        return value
+    def normalize_id(cls, value):
+        """Strip dashes/spaces, allow None if missing"""
+        if not value:
+            return None
+        return re.sub(r"[^A-Za-z0-9]", "", value)
 
     @validator("name")
     def name_default_values(cls, value, values):
@@ -454,7 +454,11 @@ def get_receiver():
             title=_("ETA Validation"),
         )
 
-    address = ReceiverAddress(
+    eta_receiver = Receiver(
+        type=customer_type,
+        id=customer.get("tax_id"),
+        name=customer.get("customer_name"),
+        address=ReceiverAddress(
             country="EG",
             governate="Egypt",
             regionCity="EG City",
@@ -466,6 +470,7 @@ def get_receiver():
             # landmark=POS_INVOICE_RAW_DATA.get("landmark"),
             # additionalInformation=POS_INVOICE_RAW_DATA.get("additional_information"),
         )
+    )
     
     customer_address_name = customer.get("customer_primary_address")
     if customer_type == "F" and not customer_address_name:
