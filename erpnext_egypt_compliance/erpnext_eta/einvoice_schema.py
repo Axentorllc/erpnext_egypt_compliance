@@ -576,29 +576,29 @@ def _get_sales_and_net_totals(_item_data: Dict):
 
 def _get_item_unit_value(_item_data: Dict):
     """Get the item unit value."""
-    currency_sold = INVOICE_RAW_DATA.get("currency")
-    _exchange_rate = INVOICE_RAW_DATA.get("_exchange_rate")
-    _unit_price = _item_data.get("net_rate") * (_exchange_rate or 1)
-    amount_egp = _unit_price
 
-    amount_sold = (
-        _item_data.get("rate") if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else 0.0
-    )
-    currency_exchange_rate = (
-        _exchange_rate if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else 0.0
-    )
+    if INVOICE_RAW_DATA.get("currency") == "EGP":
+        return Value(
+            currencySold="EGP",
+            amountEGP=_item_data.get("net_rate"),
+        )
+    
+    else:
+        currency_sold = INVOICE_RAW_DATA.get("currency")
+        currency_exchange_rate = _exchange_rate = INVOICE_RAW_DATA.get("conversion_rate")
+        amount_egp = _unit_price = _item_data.get("net_rate") * (_exchange_rate or 1)
+        
 
-    value = Value(
-        currencySold=currency_sold,
-        amountEGP=amount_egp,
-    )
+        amount_sold = (
+            _item_data.get("rate")
+        )
 
-    if amount_sold or currency_exchange_rate:
-        value.amountSold = amount_sold
-        value.currencyExchangeRate = currency_exchange_rate
-
-    return value
-
+        return Value(
+            currencySold=currency_sold,
+            amountEGP=amount_egp,
+            amountSold = amount_sold,
+            currencyExchangeRate = currency_exchange_rate
+        )
 
 def _get_item_code_and_type(_item_data: Dict):
     # default item code and type
