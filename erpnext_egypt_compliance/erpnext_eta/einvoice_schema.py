@@ -433,7 +433,26 @@ def get_issuer():
 def get_receiver():
     """Get the invoice receiver."""
     customer = frappe.get_doc("Customer", INVOICE_RAW_DATA.get("customer")).as_dict()
-    customer_type = customer.get("eta_receiver_type", "P") 
+    customer_type = customer.get("eta_receiver_type", "P")
+    customer_id = customer.get("tax_id", "").replace("-", "")
+
+    # TODO Investigate a better pydantic way to do this validation
+    if customer_type == "B":
+        if not customer_id:
+            frappe.throw(
+                _("Customer {0} must have a Tax ID to be used as Business receiver.").format(customer.get("name")),
+                title=_("ETA Validation"),
+            )
+    if customer_type == "P" and INVOICE_RAW_DATA.get("grand_total") >= 45000 and not re.match(r"^\d{14}$", customer_id):
+            frappe.throw(
+                _("Customer {0} must have a valid Tax ID (14 digits) to be used as Business receiver for invoices with grand total equal or above 45,000 EGP.").format(customer.get("name")),
+                title=_("ETA Validation"),
+            )
+    if customer_type == "F" and not customer_id:
+        frappe.throw(
+            _("Customer {0} must have a Tax ID to be used as Foreign receiver.").format(customer.get("name")),
+            title=_("ETA Validation"),
+        )
 
     eta_receiver = Receiver(
         type=customer_type,
@@ -450,7 +469,36 @@ def get_receiver():
             # room=POS_INVOICE_RAW_DATA.get("room"),
             # landmark=POS_INVOICE_RAW_DATA.get("landmark"),
             # additionalInformation=POS_INVOICE_RAW_DATA.get("additional_information"),
-        ),
+        )
+    )
+    
+    customer_address_name = customer.get("customer_primary_address")
+    if customer_type == "F" and not customer_address_name:
+        frappe.throw(
+            _("Customer {0} must have a primary address.").format(customer.get("name")),
+            title=_("ETA Validation"),
+        )
+
+    if customer_address_name:
+        customer_address = frappe.get_doc("Address", customer_address_name)
+        address = ReceiverAddress(
+            country=frappe.db.get_value("Country", customer_address.country, "code"),
+            governate=customer_address.state,
+            regionCity=customer_address.city,
+            street=customer_address.address_line1,
+            buildingNumber=customer_address.building_number or "B0"
+            # postalCode=customer_address.pincode or None,
+            # floor=customer_address.floor or None,
+            # room=customer_address.room or None,
+            # landmark=customer_address.landmark or None,
+            # additionalInformation=customer_address.address_line2 or None,
+        )
+
+    eta_receiver = Receiver(
+        type=customer_type,
+        id=customer_id,
+        name=customer.get("customer_name"),
+        address=address,
     )
     return eta_receiver
 
@@ -539,14 +587,13 @@ def _get_item_taxable_items(_item_data: Dict):
 
 
 def _get_sales_and_net_totals(_item_data: Dict):
-    is_foreign_currency = INVOICE_RAW_DATA.get("_foreign_company_currency")
 
     item_base_amount = _item_data.get("base_amount")
-    item_exchange_rate = _item_data.get("_exchange_rate") or 1
+    item_exchange_rate = INVOICE_RAW_DATA.get("conversion_rate") or _item_data.get("_exchange_rate") or 1
     item_net_amount = _item_data.get("net_amount")
 
-    if is_foreign_currency:
-        _sales_total = _net_total = item_base_amount * item_exchange_rate
+    if INVOICE_RAW_DATA.get("currency") == "EGP":
+        _sales_total = _net_total = item_base_amount
     else:
         _sales_total = _net_total = item_net_amount * item_exchange_rate
 
@@ -555,29 +602,29 @@ def _get_sales_and_net_totals(_item_data: Dict):
 
 def _get_item_unit_value(_item_data: Dict):
     """Get the item unit value."""
-    currency_sold = INVOICE_RAW_DATA.get("currency")
-    _exchange_rate = INVOICE_RAW_DATA.get("_exchange_rate")
-    _unit_price = _item_data.get("net_rate") * (_exchange_rate or 1)
-    amount_egp = _unit_price
 
-    amount_sold = (
-        _item_data.get("rate") if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else 0.0
-    )
-    currency_exchange_rate = (
-        _exchange_rate if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else 0.0
-    )
+    if INVOICE_RAW_DATA.get("currency") == "EGP":
+        return Value(
+            currencySold="EGP",
+            amountEGP=_item_data.get("net_rate"),
+        )
+    
+    else:
+        currency_sold = INVOICE_RAW_DATA.get("currency")
+        currency_exchange_rate = _exchange_rate = INVOICE_RAW_DATA.get("conversion_rate")
+        amount_egp = _unit_price = _item_data.get("net_rate") * (_exchange_rate or 1)
+        
 
-    value = Value(
-        currencySold=currency_sold,
-        amountEGP=amount_egp,
-    )
+        amount_sold = (
+            _item_data.get("rate")
+        )
 
-    if amount_sold or currency_exchange_rate:
-        value.amountSold = amount_sold
-        value.currencyExchangeRate = currency_exchange_rate
-
-    return value
-
+        return Value(
+            currencySold=currency_sold,
+            amountEGP=amount_egp,
+            amountSold = amount_sold,
+            currencyExchangeRate = currency_exchange_rate
+        )
 
 def _get_item_code_and_type(_item_data: Dict):
     # default item code and type
@@ -655,16 +702,16 @@ def calculate_total_discount_amount(_invoice_lines):
 
 
 def get_net_total_amount():
-    is_foreign_currency = INVOICE_RAW_DATA.get("_foreign_company_currency")
+    is_foreign_currency = INVOICE_RAW_DATA.get("conversion_rate") or INVOICE_RAW_DATA.get("_foreign_company_currency")
 
     _base_total = INVOICE_RAW_DATA.get("base_total")
     _net_total = INVOICE_RAW_DATA.get("net_total")
     _base_grand_total = INVOICE_RAW_DATA.get("base_grand_total")
-    _exchange_rate = INVOICE_RAW_DATA.get("_exchange_rate") or 1
+    _exchange_rate = INVOICE_RAW_DATA.get("conversion_rate") or INVOICE_RAW_DATA.get("_exchange_rate") or 1
 
     if is_foreign_currency:
-        _net_amount = _base_total * _exchange_rate
-        _total_amount = _net_total * _exchange_rate
+        _net_amount = _base_total
+        _total_amount = _base_total 
     else:
         _net_amount = _net_total * _exchange_rate
         _total_amount = _base_grand_total
