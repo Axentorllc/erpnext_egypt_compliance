@@ -709,12 +709,12 @@ def get_net_total_amount():
     _base_grand_total = INVOICE_RAW_DATA.get("base_grand_total")
     _exchange_rate = INVOICE_RAW_DATA.get("conversion_rate") or INVOICE_RAW_DATA.get("_exchange_rate") or 1
 
-    if is_foreign_currency:
-        _net_amount = _base_total
-        _total_amount = _base_total 
-    else:
+    if INVOICE_RAW_DATA.get("currency") == "EGP":
         _net_amount = _net_total * _exchange_rate
         _total_amount = _base_grand_total
+    else:
+        _net_amount = _base_total
+        _total_amount = _base_total 
 
     return _net_amount, _total_amount
 
