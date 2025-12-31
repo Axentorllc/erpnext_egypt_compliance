@@ -405,7 +405,7 @@ def download_eta_ereceipt_json(docname, file_content):
 
 
 @frappe.whitelist()
-def submit_ereceipt(docname, pos_profile, doctype, raise_throw=True) -> None:
+def submit_ereceipt(docname, pos_profile, doctype="POS Invoice", raise_throw=True):
     """Submit the POS E-Receipt to the API."""
     try:
         ereceipt = build_erceipt_json(docname, doctype)
@@ -567,29 +567,29 @@ def _get_unit_price(_item: dict) -> float:
     unit_price = _item.get("net_rate") * (_item.get("_exchange_rate") or 1)
     return _eta_round(unit_price)
 
-
 def _get_item_metrics(_item: dict) -> Dict:
     unit_price = _get_unit_price(_item)
     exchange_rate = _item.get("_exchange_rate") or 1
 
     net_sale = _item.get("net_amount")
-    total_sale = net_sale + _item.get("discount_amount")
-
-    # TODO: Hardcoded
-    tax_rate = (_item.get("tax_rate") or 14) / 100
-    item_tax_amount = net_sale * tax_rate
-    item_total = _eta_round(net_sale + item_tax_amount)
+    total_sale = _eta_round(_item.get("qty") * _item.get("net_rate"))
 
     taxable_items = _get_taxable_items(_item)
+
+    total_tax_amount = sum(tax.amount for tax in taxable_items)
+
+    item_total = _eta_round(net_sale + total_tax_amount)
 
     item_unit_type = frappe.get_value("UOM", _item.get("uom"), "eta_uom") or frappe.get_value(
         "ETA Settings", "ETA Settings", "eta_uom"
     )
+
     item_code = (
         _item.get("eta_item_code")
         or frappe.get_value("ETA Settings", "ETA Settings", "eta_item_code")
         or _item.get("item_code")
     )
+
     return {
         "unit_price": unit_price,
         "exchange_rate": exchange_rate,
@@ -601,7 +601,6 @@ def _get_item_metrics(_item: dict) -> Dict:
         "total_sale": total_sale,
     }
 
-
 def get_pos_receipt_item_data() -> List[SingleItemData]:
     """Get the POS E-Receipt ItemData."""
     item_data = []
@@ -611,7 +610,7 @@ def get_pos_receipt_item_data() -> List[SingleItemData]:
             SingleItemData(
                 internalCode=item.get("item_code"),
                 description=item.get("item_name"),
-                itemType=item.get("eta_code_type", "GS1"),
+                itemType=item.get("eta_code_type", "EGS"),
                 quantity=item.get("qty"),
                 itemCode=item_metrics.get("item_code"),
                 unitType=item_metrics.get("item_unit_type"),
@@ -640,3 +639,5 @@ def get_pos_receipt_tax_totals(taxableItems):
             amount=amount
         )) 
     return tax_totals
+
+

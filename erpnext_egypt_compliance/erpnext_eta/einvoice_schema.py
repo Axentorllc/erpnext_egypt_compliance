@@ -7,7 +7,7 @@ from typing import List, Dict, Optional
 from pydantic import BaseModel, validator, Field, root_validator
 
 import frappe
-
+from frappe import _
 from erpnext_egypt_compliance.erpnext_eta.utils import (
     eta_datetime_issued_format,
     validate_allowed_values,
@@ -217,7 +217,7 @@ class ReceiverAddress(BaseModel):
 
 class Receiver(BaseModel):
     type: str
-    id: str = Field(default=None)
+    id: Optional[str] = None
     name: str = Field(...)
     address: ReceiverAddress = Field(...)
 
@@ -227,19 +227,19 @@ class Receiver(BaseModel):
         return validate_allowed_values(value, allowed_types)
 
     @validator("id", pre=True, always=True)
-    def id_default_values(cls, value, values):
-        if values.get("type") == "P" and INVOICE_RAW_DATA.get("grand_total") >= 45000:
-            customer_tax_id = frappe.get_doc("Customer", INVOICE_RAW_DATA.get("customer")).get("tax_id")
-            return customer_tax_id.replace("-", "")
-        return value
+    def normalize_id(cls, value):
+        """Strip dashes/spaces, allow None if missing"""
+        if not value:
+            return None
+        return re.sub(r"[^A-Za-z0-9]", "", value)
 
-    @validator("name")
+    @validator("name", pre=True, always=True)
     def name_default_values(cls, value, values):
-        if values.get("type") == "P":
+        if values.get("type") == "P" and not value:
             return "Walkin Customer"
         return value
-
-
+        
+        
 class IssuerAddress(BaseModel):
     branchId: str = Field(...)
     country: str = Field(default="EG")
@@ -324,7 +324,20 @@ def get_invoice_asjson(docname: str, as_dict: bool=False):
 
     issuer = get_issuer()
     receiver = get_receiver()
-    document_type = "C" if INVOICE_RAW_DATA.get("is_return") else "I"
+    validate_receiver_compliance(receiver)
+    
+    # Determine document type correctly based on ERPNext fields
+    is_debit_note = INVOICE_RAW_DATA.get("is_debit_note")
+    is_return = INVOICE_RAW_DATA.get("is_return")
+
+    # Priority order: Debit Note > Credit Note (Return) > Invoice
+    if is_debit_note:
+        document_type = "D"
+    elif is_return:
+        document_type = "C"
+    else:
+        document_type = "I"
+    
     document_type_version = "1.0" if INVOICE_RAW_DATA.eta_signature else "0.9"
     date_time_issued = INVOICE_RAW_DATA.get("posting_date")
     taxpayer_activity_code = COMPANY_DATA.get("eta_default_activity_code")
@@ -428,30 +441,85 @@ def get_issuer():
         ),
     )
 
-
 def get_receiver():
     """Get the invoice receiver."""
     customer = frappe.get_doc("Customer", INVOICE_RAW_DATA.get("customer")).as_dict()
     customer_type = customer.get("eta_receiver_type", "P")
-    customer_id = customer.get("tax_id", "").replace("-", "") if customer_type == "B" else None
-    eta_receiver = Receiver(
-        type=customer_type,
-        id=customer_id,
-        name=customer.get("customer_name"),
-        address=ReceiverAddress(
-            country="EG",
-            governate="Egypt",
-            regionCity="EG City",
-            street="Street 1",
-            buildingNumber="B0",
-            # postalCode=POS_INVOICE_RAW_DATA.get("postal_code"),
-            # floor=POS_INVOICE_RAW_DATA.get("floor"),
-            # room=POS_INVOICE_RAW_DATA.get("room"),
-            # landmark=POS_INVOICE_RAW_DATA.get("landmark"),
-            # additionalInformation=POS_INVOICE_RAW_DATA.get("additional_information"),
-        ),
+    customer_id = customer.get("tax_id", "").replace("-", "")
+
+    # --- ETA validations ---
+    if customer_type == "B" and not customer_id:
+        frappe.throw(
+            _("Customer {0} must have a Tax ID to be used as Business receiver.").format(customer.get("name")),
+            title=_("ETA Validation"),
+        )
+
+    if customer_type == "P" and INVOICE_RAW_DATA.get("grand_total") >= 25000 and not re.match(r"^\d{14}$", customer_id):
+        frappe.throw(
+            _("Customer {0} must have a valid Tax ID (14 digits) for invoices ≥ 25,000 EGP.")
+            .format(customer.get("name")),
+            title=_("ETA Validation"),
+        )
+
+    if customer_type == "F" and not customer_id:
+        frappe.throw(
+            _("Customer {0} must have a Tax ID to be used as Foreign receiver.").format(customer.get("name")),
+            title=_("ETA Validation"),
+        )
+
+    # ✅ default fallback address (mandatory for ETA schema)
+    address = ReceiverAddress(
+        country="EG",
+        governate="N/A",
+        regionCity="N/A",
+        street="N/A",
+        buildingNumber="0",
     )
-    return eta_receiver
+
+    customer_address_name = customer.get("customer_primary_address")
+
+    if customer_address_name:
+        customer_address = frappe.get_doc("Address", customer_address_name)
+        address = ReceiverAddress(
+            country=frappe.db.get_value("Country", customer_address.country, "code"),
+            governate=customer_address.state or "N/A",
+            regionCity=customer_address.city or "N/A",
+            street=customer_address.address_line1 or "N/A",
+            buildingNumber=customer_address.building_number or "0",
+        )
+    elif customer_type == "F":
+        frappe.throw(
+            _("Customer {0} must have a primary address.").format(customer.get("name")),
+            title=_("ETA Validation"),
+        )
+
+    return Receiver(
+        type=customer_type,
+        id=customer_id or None,
+        name=customer.get("customer_name"),
+        address=address,
+    )
+
+def validate_receiver_compliance(receiver: Receiver):
+    """Validate ETA compliance rules for receiver before submission."""
+
+    if receiver.type == "B":
+        if not receiver.id or not re.fullmatch(r"\d{9}", receiver.id):
+            frappe.throw(
+                _("Business customers must have a valid 9-digit Tax ID"),
+                title=_("ETA Validation")
+            )
+
+    elif receiver.type == "P":
+        if INVOICE_RAW_DATA.get("grand_total") >= 25000:
+            if not receiver.id or not re.fullmatch(r"\d{14}", receiver.id):
+                frappe.throw(
+                    _("Individuals with invoices ≥ 25,000 EGP must have a valid 14-digit Tax ID"),
+                    title=_("ETA Validation")
+                )
+
+    # Foreign ("F") → no strict rule for now
+    return True
 
 
 def _get_item_total(_net_total: float, _taxable_items) -> float:
@@ -517,14 +585,13 @@ def _get_item_taxable_items(_item_data: Dict):
 
 
 def _get_sales_and_net_totals(_item_data: Dict):
-    is_foreign_currency = INVOICE_RAW_DATA.get("_foreign_company_currency")
 
     item_base_amount = _item_data.get("base_amount")
-    item_exchange_rate = _item_data.get("_exchange_rate") or 1
+    item_exchange_rate = INVOICE_RAW_DATA.get("conversion_rate") or _item_data.get("_exchange_rate") or 1
     item_net_amount = _item_data.get("net_amount")
 
-    if is_foreign_currency:
-        _sales_total = _net_total = item_base_amount * item_exchange_rate
+    if INVOICE_RAW_DATA.get("currency") == "EGP":
+        _sales_total = _net_total = item_base_amount
     else:
         _sales_total = _net_total = item_net_amount * item_exchange_rate
 
@@ -533,34 +600,34 @@ def _get_sales_and_net_totals(_item_data: Dict):
 
 def _get_item_unit_value(_item_data: Dict):
     """Get the item unit value."""
-    currency_sold = INVOICE_RAW_DATA.get("currency")
-    _exchange_rate = INVOICE_RAW_DATA.get("_exchange_rate")
-    _unit_price = _item_data.get("net_rate") * (_exchange_rate or 1)
-    amount_egp = _unit_price
 
-    amount_sold = (
-        _item_data.get("rate") if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else 0.0
-    )
-    currency_exchange_rate = (
-        _exchange_rate if currency_sold != "EGP" and INVOICE_RAW_DATA.get("_foreign_company_currency") else 0.0
-    )
+    if INVOICE_RAW_DATA.get("currency") == "EGP":
+        return Value(
+            currencySold="EGP",
+            amountEGP=_item_data.get("net_rate"),
+        )
+    
+    else:
+        currency_sold = INVOICE_RAW_DATA.get("currency")
+        currency_exchange_rate = _exchange_rate = INVOICE_RAW_DATA.get("conversion_rate")
+        amount_egp = _unit_price = _item_data.get("net_rate") * (_exchange_rate or 1)
+        
 
-    value = Value(
-        currencySold=currency_sold,
-        amountEGP=amount_egp,
-    )
+        amount_sold = (
+            _item_data.get("rate")
+        )
 
-    if amount_sold or currency_exchange_rate:
-        value.amountSold = amount_sold
-        value.currencyExchangeRate = currency_exchange_rate
-
-    return value
-
+        return Value(
+            currencySold=currency_sold,
+            amountEGP=amount_egp,
+            amountSold = amount_sold,
+            currencyExchangeRate = currency_exchange_rate
+        )
 
 def _get_item_code_and_type(_item_data: Dict):
     # default item code and type
     _code = _item_data.get("eta_item_code") or frappe.get_value("ETA Settings", "ETA Settings", "eta_item_code")
-    _type = _item_data.get("eta_code_type", "GS1")
+    _type = _item_data.get("eta_code_type", "EGS")
 
     if _item_data.get("eta_inherit_brand"):
         _code = frappe.get_value("Brand", _item_data.get("brand"), "eta_item_code")
@@ -633,19 +700,19 @@ def calculate_total_discount_amount(_invoice_lines):
 
 
 def get_net_total_amount():
-    is_foreign_currency = INVOICE_RAW_DATA.get("_foreign_company_currency")
+    is_foreign_currency = INVOICE_RAW_DATA.get("conversion_rate") or INVOICE_RAW_DATA.get("_foreign_company_currency")
 
     _base_total = INVOICE_RAW_DATA.get("base_total")
     _net_total = INVOICE_RAW_DATA.get("net_total")
     _base_grand_total = INVOICE_RAW_DATA.get("base_grand_total")
-    _exchange_rate = INVOICE_RAW_DATA.get("_exchange_rate") or 1
+    _exchange_rate = INVOICE_RAW_DATA.get("conversion_rate") or INVOICE_RAW_DATA.get("_exchange_rate") or 1
 
-    if is_foreign_currency:
-        _net_amount = _base_total * _exchange_rate
-        _total_amount = _net_total * _exchange_rate
-    else:
+    if INVOICE_RAW_DATA.get("currency") == "EGP":
         _net_amount = _net_total * _exchange_rate
         _total_amount = _base_grand_total
+    else:
+        _net_amount = _base_total
+        _total_amount = _base_total 
 
     return _net_amount, _total_amount
 
@@ -700,3 +767,5 @@ def validate_mandatory_fields(cls, values):
         error_fields = "<ul>" + "".join(f"<li>{error}</li>" for error in error_fields) + "</ul>"
         raise ValueError(error_fields)
     return values
+    
+
