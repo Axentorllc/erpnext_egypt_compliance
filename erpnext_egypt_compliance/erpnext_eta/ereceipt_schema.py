@@ -478,12 +478,17 @@ def submit_ereceipt(docname, pos_profile, doctype="POS Invoice", raise_throw=Tru
         ereceipt = build_erceipt_json(docname, doctype)
         receipt_dict = ereceipt.model_dump()
         
-        # Log receipt details before cleaning
+        # Determine if this is a return receipt
+        is_return = False
+        receipt_type_display = "Receipt"
         if receipt_dict.get("receipts"):
             first_receipt = receipt_dict["receipts"][0]
-            receipt_type = first_receipt.get("documentType", {}).get("receiptType", "unknown")
+            receipt_type = first_receipt.get("documentType", {}).get("receiptType", "s")
+            is_return = (receipt_type == "r")
+            receipt_type_display = "Return Receipt" if is_return else "Receipt"
             receipt_num = first_receipt.get("header", {}).get("receiptNumber", "unknown")
             ref_uuid_before = first_receipt.get("header", {}).get("referenceUUID")
+            
             frappe.log_error(
                 title="E-Receipt - Before Cleaning",
                 message=f"Receipt: {receipt_num}, Type: {receipt_type}, referenceUUID before: {ref_uuid_before}",
@@ -509,6 +514,23 @@ def submit_ereceipt(docname, pos_profile, doctype="POS Invoice", raise_throw=Tru
         if connector:
             eta_submitter = EReceiptSubmitter(connector)
             processed_docs = eta_submitter.submit_ereceipt(cleaned_dict, doctype)
+            
+            # Show success message
+            if raise_throw:
+                success_message = f"E-{receipt_type_display} submitted successfully for {docname}"
+                frappe.msgprint(
+                    msg=_(success_message),
+                    title=_("Success"),
+                    indicator="green"
+                )
+            
+            return {
+                "status": "success",
+                "message": f"E-{receipt_type_display} submitted successfully",
+                "docname": docname,
+                "is_return": is_return
+            }
+            
     except Exception as e:
         error_traceback = frappe.get_traceback()
         frappe.log_error(
@@ -518,9 +540,24 @@ def submit_ereceipt(docname, pos_profile, doctype="POS Invoice", raise_throw=Tru
             reference_name=docname
         )
         if raise_throw:
+            # Determine receipt type for error message
+            receipt_type_display = "Receipt"
+            try:
+                is_return = frappe.db.get_value(doctype, docname, "is_return")
+                receipt_type_display = "Return Receipt" if is_return else "Receipt"
+            except:
+                pass
+            
             frappe.throw(
-                    _(str(e)),
-                    title=_("Submitting e-Receipt Failed"),)
+                _(str(e)),
+                title=_(f"Submitting E-{receipt_type_display} Failed"),
+            )
+        
+        return {
+            "status": "error",
+            "message": str(e),
+            "docname": docname
+        }
         
 @frappe.whitelist()      
 def fetch_ereceipt_status(docname, raise_throw=True):
@@ -1015,4 +1052,3 @@ def get_pos_receipt_tax_totals(taxableItems):
             amount=amount
         )) 
     return tax_totals
-
