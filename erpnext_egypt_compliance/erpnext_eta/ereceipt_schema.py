@@ -226,7 +226,7 @@ class ReceiptSeller(BaseModel):
 
 
 class ReceiptDocumentType(BaseModel):
-    receiptType: str = Field(default="s", description="Receipt Type Codes. s: Sale Receipt")
+    receiptType: str = Field(default="s", description="Receipt Type Codes. s: Sale Receipt, r: Return Receipt")
     typeVersion: str = Field(default="1.2", description="SDK Version")
 
 
@@ -234,10 +234,14 @@ class ReceiptHeader(BaseModel):
     dateTimeIssued: datetime = Field(..., description="Date and time of the receipt issue")
     receiptNumber: str = Field(..., description="Receipt Number. Unique per branch within the same submission")
     uuid: str = Field(default_factory="", description="Unique ID for the receipt")
-    previousUUID: str = Field(default="", description="When receipt type is return")
+    previousUUID: str = Field(default="", description="Mandatory, SHA256 format, Reference to previous receipt, empty string value is accepted only if this is the first receipt issued from this POS")
+    referenceUUID: Optional[str] = Field(
+        default=None,
+        description="Mandatory for return receipts, Reference to The Sale Receipt. Not included for normal receipts.",
+    )
     referenceOldUUID: str = Field(
         default="",
-        description="validation failure and requirement to change something.",
+        description="Optional, This is not validated and is used for the resent return receipt case in case of validation failure and requirement to change something in the return receipt and resend it with a different UUID.",
     )
     currency: str = Field(default="EGP", description="Currency Code")
     # exchangeRate: float = Field(default=1.0, description="Exchange rate of the currency to EGP")
@@ -273,7 +277,21 @@ class ReceiptHeader(BaseModel):
 # @validator("uuid", pre=True, always=True)
 def validate_and_generate_uuid(ereceipt):
     # Serialize and normalize the receipt object
-    document_structure = {key: value for key, value in ereceipt.items() if key != "uuid"}
+    # Exclude uuid and also exclude referenceUUID if it's None (for normal receipts)
+    document_structure = {}
+    for key, value in ereceipt.items():
+        if key == "uuid":
+            continue
+        # Exclude referenceUUID if it's None (for normal receipts) to match what will be sent
+        if key == "header" and isinstance(value, dict):
+            header_copy = value.copy()
+            # Remove referenceUUID if None (normal receipts)
+            if header_copy.get("referenceUUID") is None:
+                header_copy.pop("referenceUUID", None)
+            document_structure[key] = header_copy
+        else:
+            document_structure[key] = value
+    
     serialized_text = serialize(document_structure)
     
     # Hash the normalized text using SHA256
@@ -329,13 +347,25 @@ def build_erceipt_json(docname: str, doctype: str):
     set_global_raw_data(docname, doctype)
 
     header: ReceiptHeader = get_pos_ereceipt_header()
-    document_type: ReceiptDocumentType = ReceiptDocumentType()
+    
+    # Set receipt type to "r" for return receipts, "s" for normal receipts
+    is_return = POS_INVOICE_RAW_DATA.get("is_return", 0)
+    receipt_type = "r" if is_return else "s"
+    document_type: ReceiptDocumentType = ReceiptDocumentType(receiptType=receipt_type)
+    
     seller: ReceiptSeller = get_pos_receipt_seller()
     buyer: ReceiptBuyer = get_pos_receipt_buyer()
     item_data: List[SingleItemData] = get_pos_receipt_item_data()
+    
+    # For return receipts, convert negative totals to positive
     total_sales: float = frappe.utils.flt(sum([item.totalSale for item in item_data]), 5)
     net_amount: float = frappe.utils.flt(sum([item.netSale for item in item_data]), 5)
     total_amount: float = sum([item.total for item in item_data])
+    
+    if is_return:
+        total_sales = abs(total_sales)
+        net_amount = abs(net_amount)
+        total_amount = abs(total_amount)
     # TODO make payment method dynamic
     payment_method: str = "C"
     adjustment: float = 0.0
@@ -375,7 +405,22 @@ def build_erceipt_json(docname: str, doctype: str):
     seconds = POS_INVOICE_RAW_DATA.get("posting_time").seconds
     date_formated = eta_datetime_issued_format(POS_INVOICE_RAW_DATA.get("posting_date"), seconds)
     receipt.header.dateTimeIssued = date_formated
-    uuid = validate_and_generate_uuid(receipt.model_dump())
+    
+    # Generate UUID from the receipt structure
+    # First, get the dict representation
+    receipt_dict = receipt.model_dump()
+    
+    # Clean it (remove referenceUUID if None for normal receipts) before generating UUID
+    # This ensures UUID matches what will actually be sent
+    cleaned_receipt = receipt_dict.copy()
+    if "header" in cleaned_receipt and isinstance(cleaned_receipt["header"], dict):
+        is_return = cleaned_receipt.get("documentType", {}).get("receiptType") == "r"
+        ref_uuid = cleaned_receipt["header"].get("referenceUUID")
+        if not is_return and (ref_uuid is None or ref_uuid == ""):
+            cleaned_receipt["header"].pop("referenceUUID", None)
+    
+    # Generate UUID from the cleaned structure (what will actually be sent)
+    uuid = validate_and_generate_uuid(cleaned_receipt)
     receipt.header.uuid = uuid
     receipts.append(receipt)
     # signatures: List[SingleSignature] = [SingleSignature()]
@@ -385,11 +430,33 @@ def build_erceipt_json(docname: str, doctype: str):
     
     return receipts_response
 
+def _clean_receipt_dict(receipt_dict: dict) -> dict:
+    """Remove referenceUUID from normal receipts (when None or empty) but keep it for return receipts."""
+    if isinstance(receipt_dict, dict):
+        if "receipts" in receipt_dict:
+            for receipt in receipt_dict["receipts"]:
+                if "header" in receipt and isinstance(receipt["header"], dict):
+                    # Check if it's a return receipt by looking at documentType
+                    is_return = receipt.get("documentType", {}).get("receiptType") == "r"
+                    # If not a return receipt and referenceUUID is None or empty, remove it
+                    ref_uuid = receipt["header"].get("referenceUUID")
+                    if not is_return and (ref_uuid is None or ref_uuid == ""):
+                        receipt["header"].pop("referenceUUID", None)
+                        # Log for debugging
+                        receipt_num = receipt["header"].get("receiptNumber", "Unknown")
+                        frappe.log_error(
+                            title="E-Receipt - Removed referenceUUID",
+                            message=f"Removed referenceUUID from normal receipt: {receipt_num}"
+                        )
+    return receipt_dict
+
 @frappe.whitelist()
 def download_ereceipt_json(docname, doctype):
     try:
         file_content = build_erceipt_json(docname, doctype)
-        ereceipt_as_json = file_content.model_dump_json()
+        receipt_dict = file_content.model_dump()
+        cleaned_dict = _clean_receipt_dict(receipt_dict)
+        ereceipt_as_json = json.dumps(cleaned_dict, indent=4, ensure_ascii=False)
         return download_eta_ereceipt_json(docname, ereceipt_as_json)
     except ValueError as e:
         frappe.log_error(title="Download E-Receipt", message=e, reference_doctype="POS Invoice", reference_name=docname)
@@ -409,15 +476,50 @@ def submit_ereceipt(docname, pos_profile, doctype="POS Invoice", raise_throw=Tru
     """Submit the POS E-Receipt to the API."""
     try:
         ereceipt = build_erceipt_json(docname, doctype)
+        receipt_dict = ereceipt.model_dump()
+        
+        # Log receipt details before cleaning
+        if receipt_dict.get("receipts"):
+            first_receipt = receipt_dict["receipts"][0]
+            receipt_type = first_receipt.get("documentType", {}).get("receiptType", "unknown")
+            receipt_num = first_receipt.get("header", {}).get("receiptNumber", "unknown")
+            ref_uuid_before = first_receipt.get("header", {}).get("referenceUUID")
+            frappe.log_error(
+                title="E-Receipt - Before Cleaning",
+                message=f"Receipt: {receipt_num}, Type: {receipt_type}, referenceUUID before: {ref_uuid_before}",
+                reference_doctype=doctype,
+                reference_name=docname
+            )
+        
+        cleaned_dict = _clean_receipt_dict(receipt_dict)
+        
+        # Log receipt details after cleaning
+        if cleaned_dict.get("receipts"):
+            first_receipt = cleaned_dict["receipts"][0]
+            receipt_num = first_receipt.get("header", {}).get("receiptNumber", "unknown")
+            ref_uuid_after = first_receipt.get("header", {}).get("referenceUUID")
+            frappe.log_error(
+                title="E-Receipt - After Cleaning",
+                message=f"Receipt: {receipt_num}, referenceUUID after: {ref_uuid_after}",
+                reference_doctype=doctype,
+                reference_name=docname
+            )
+        
         connector = frappe.get_doc("ETA POS Connector", pos_profile)
         if connector:
             eta_submitter = EReceiptSubmitter(connector)
-            processed_docs = eta_submitter.submit_ereceipt(ereceipt.model_dump(), doctype)
+            processed_docs = eta_submitter.submit_ereceipt(cleaned_dict, doctype)
     except Exception as e:
-        frappe.log_error(title="Submit E-Receipt", message=e, reference_doctype="POS Invoice", reference_name=docname)
+        error_traceback = frappe.get_traceback()
+        frappe.log_error(
+            title="Submit E-Receipt - Exception",
+            message=f"Error: {str(e)}\n\nTraceback:\n{error_traceback}",
+            reference_doctype=doctype,
+            reference_name=docname
+        )
         if raise_throw:
             frappe.throw(
-                    _(e),
+                    _(str(e)),
                     title=_("Submitting e-Receipt Failed"),)
         
 @frappe.whitelist()      
@@ -458,6 +560,250 @@ def set_global_raw_data(docname: str, doctype: str) -> None:
     COMPANY_DATA = frappe.get_doc("Company", POS_INVOICE_RAW_DATA.get("company")).as_dict()
 
 
+def get_original_receipt_uuid() -> str:
+    """Get the original receipt UUID for return receipts."""
+    return_against = POS_INVOICE_RAW_DATA.get("return_against")
+    current_doctype = POS_INVOICE_RAW_DATA.get("doctype") or "POS Invoice"
+    
+    if not return_against:
+        frappe.log_error(f"No return_against found for document", "Get Original Receipt UUID")
+        return ""
+    
+    # Determine the doctype of the original document
+    original_doctype = None
+    if frappe.db.exists("Sales Invoice", return_against):
+        original_doctype = "Sales Invoice"
+    elif frappe.db.exists("POS Invoice", return_against):
+        original_doctype = "POS Invoice"
+    
+    if not original_doctype:
+        frappe.log_error(f"Original document {return_against} not found", "Get Original Receipt UUID")
+        return ""
+    
+    # Try to get UUID from ETA Log Documents (works for both POS Invoice and Sales Invoice)
+    # This is the most reliable way as it stores the UUID after submission
+    try:
+        # First try with exact doctype match
+        original_uuid = frappe.db.sql("""
+            SELECT uuid 
+            FROM `tabETA Log Documents`
+            WHERE reference_document = %s
+            AND reference_doctype = %s
+            AND uuid IS NOT NULL
+            AND uuid != ''
+            ORDER BY creation DESC
+            LIMIT 1
+        """, (return_against, original_doctype), as_dict=False)
+        
+        if original_uuid and len(original_uuid) > 0 and original_uuid[0] and original_uuid[0][0]:
+            uuid_value = original_uuid[0][0]
+            frappe.log_error(f"Found UUID from ETA Log Documents: {uuid_value[:20]}... for {return_against}", "Get Original Receipt UUID - Success")
+            return uuid_value
+        
+        # If not found, try without doctype filter (in case of mismatch)
+        original_uuid = frappe.db.sql("""
+            SELECT uuid 
+            FROM `tabETA Log Documents`
+            WHERE reference_document = %s
+            AND uuid IS NOT NULL
+            AND uuid != ''
+            ORDER BY creation DESC
+            LIMIT 1
+        """, (return_against,), as_dict=False)
+        
+        if original_uuid and len(original_uuid) > 0 and original_uuid[0] and original_uuid[0][0]:
+            uuid_value = original_uuid[0][0]
+            frappe.log_error(f"Found UUID from ETA Log Documents (no doctype): {uuid_value[:20]}... for {return_against}", "Get Original Receipt UUID - Success")
+            return uuid_value
+        
+        # Also try querying through parent ETA Log table
+        original_uuid = frappe.db.sql("""
+            SELECT d.uuid 
+            FROM `tabETA Log Documents` d
+            INNER JOIN `tabETA Log` l ON d.parent = l.name
+            WHERE d.reference_document = %s
+            AND l.from_doctype = %s
+            AND d.uuid IS NOT NULL
+            AND d.uuid != ''
+            ORDER BY d.creation DESC
+            LIMIT 1
+        """, (return_against, original_doctype), as_dict=False)
+        
+        if original_uuid and len(original_uuid) > 0 and original_uuid[0] and original_uuid[0][0]:
+            uuid_value = original_uuid[0][0]
+            frappe.log_error(f"Found UUID from ETA Log (via parent): {uuid_value[:20]}... for {return_against}", "Get Original Receipt UUID - Success")
+            return uuid_value
+        
+        # If UUID is None in ETA Log Documents, try to extract it from parent ETA Log's response
+        # This happens when the UUID hasn't been populated in the child table yet
+        try:
+            parent_logs = frappe.db.sql("""
+                SELECT l.name, l.eta_response, l.submission_id, l.pos_profile, d.reference_document
+                FROM `tabETA Log Documents` d
+                INNER JOIN `tabETA Log` l ON d.parent = l.name
+                WHERE d.reference_document = %s
+                AND l.from_doctype = %s
+                ORDER BY d.creation DESC
+                LIMIT 1
+            """, (return_against, original_doctype), as_dict=True)
+            
+            if parent_logs and len(parent_logs) > 0:
+                parent_log = parent_logs[0]
+                eta_response_str = parent_log.get("eta_response")
+                
+                if eta_response_str:
+                    try:
+                        # Handle both string and dict formats
+                        if isinstance(eta_response_str, str):
+                            eta_response = json.loads(eta_response_str)
+                        else:
+                            eta_response = eta_response_str
+                        
+                        # Try to find UUID in acceptedDocuments
+                        internal_id_key = "internalId" if original_doctype == "Sales Invoice" else "receiptNumber"
+                        
+                        # Check acceptedDocuments
+                        for doc in eta_response.get("acceptedDocuments", []):
+                            doc_id = doc.get(internal_id_key)
+                            if doc_id == return_against and doc.get("uuid"):
+                                uuid_value = doc.get("uuid")
+                                frappe.log_error(f"Found UUID from ETA Log response: {uuid_value[:20]}... for {return_against}", "Get Original Receipt UUID - Success")
+                                return uuid_value
+                        
+                        # Also check rejectedDocuments (sometimes UUID is there even if rejected)
+                        for doc in eta_response.get("rejectedDocuments", []):
+                            doc_id = doc.get(internal_id_key)
+                            if doc_id == return_against and doc.get("uuid"):
+                                uuid_value = doc.get("uuid")
+                                frappe.log_error(f"Found UUID from ETA Log response (rejected): {uuid_value[:20]}... for {return_against}", "Get Original Receipt UUID - Success")
+                                return uuid_value
+                        
+                        # Debug: log what we found
+                        accepted_count = len(eta_response.get("acceptedDocuments", []))
+                        rejected_count = len(eta_response.get("rejectedDocuments", []))
+                        frappe.log_error(f"ETA Log response has {accepted_count} accepted, {rejected_count} rejected docs. Looking for {return_against} with key {internal_id_key}", "Get Original Receipt UUID - Debug")
+                    except json.JSONDecodeError as e:
+                        frappe.log_error(f"JSON decode error: {str(e)[:100]}", "Get Original Receipt UUID")
+                    except Exception as e:
+                        frappe.log_error(f"Error parsing ETA Log response: {str(e)[:100]}", "Get Original Receipt UUID")
+                else:
+                    # If no eta_response, try to get UUID from ETA API using submission_id
+                    submission_id = parent_log.get("submission_id")
+                    pos_profile = parent_log.get("pos_profile")
+                    if submission_id and pos_profile:
+                        try:
+                            from erpnext_egypt_compliance.erpnext_eta.ereceipt_submitter import EReceiptSubmitter
+                            connector = frappe.get_doc("ETA POS Connector", pos_profile)
+                            submitter = EReceiptSubmitter(connector)
+                            submission_data = submitter.get_receipt_submission(submission_id)
+                            
+                            if isinstance(submission_data, dict):
+                                # Look for the receipt in the submission data
+                                internal_id_key = "receiptNumber"  # For receipts, it's always receiptNumber
+                                receipts = submission_data.get("receipts", [])
+                                for receipt in receipts:
+                                    if receipt.get(internal_id_key) == return_against and receipt.get("uuid"):
+                                        uuid_value = receipt.get("uuid")
+                                        frappe.log_error(f"Found UUID from ETA API: {uuid_value[:20]}... for {return_against}", "Get Original Receipt UUID - Success")
+                                        return uuid_value
+                        except Exception as e:
+                            frappe.log_error(f"Error getting UUID from ETA API: {str(e)[:100]}", "Get Original Receipt UUID")
+                    else:
+                        frappe.log_error(f"ETA Log {parent_log.get('name')} has no eta_response, submission_id: {submission_id}, pos_profile: {pos_profile}", "Get Original Receipt UUID - Debug")
+        except Exception as e:
+            frappe.log_error(f"Error querying parent ETA Log: {str(e)[:100]}", "Get Original Receipt UUID")
+        
+        # Debug: Check what's actually in ETA Log Documents
+        debug_info = frappe.db.sql("""
+            SELECT reference_document, reference_doctype, uuid, parent
+            FROM `tabETA Log Documents`
+            WHERE reference_document = %s
+            LIMIT 5
+        """, (return_against,), as_dict=True)
+        if debug_info:
+            frappe.log_error(f"Debug ETA Log Documents for {return_against}: {str(debug_info)}", "Get Original Receipt UUID - Debug")
+    except Exception as e:
+        frappe.log_error(f"Error getting UUID from ETA Log Documents: {str(e)}", "Get Original Receipt UUID")
+    
+    # For Sales Invoice: Check if original was submitted as e-invoice (eta_uuid) or e-receipt (custom_eta_uuid)
+    if original_doctype == "Sales Invoice":
+        try:
+            # First check custom_eta_uuid (for e-receipts)
+            try:
+                original_uuid = frappe.db.get_value("Sales Invoice", return_against, "custom_eta_uuid")
+                if original_uuid:
+                    frappe.log_error(f"Found UUID from Sales Invoice custom_eta_uuid: {original_uuid} for {return_against}", "Get Original Receipt UUID - Success")
+                    return original_uuid
+            except Exception:
+                pass  # Field might not exist, continue to next check
+            
+            # Then check eta_uuid (for e-invoices)
+            original_uuid = frappe.db.get_value("Sales Invoice", return_against, "eta_uuid")
+            if original_uuid:
+                frappe.log_error(f"Found UUID from Sales Invoice eta_uuid: {original_uuid} for {return_against}", "Get Original Receipt UUID - Success")
+                return original_uuid
+        except Exception as e:
+            frappe.log_error(f"Error getting UUID from Sales Invoice: {str(e)}", "Get Original Receipt UUID")
+    
+    # For POS Invoice: Check custom field if it exists
+    if original_doctype == "POS Invoice":
+        try:
+            # Try custom_eta_uuid first (if it exists)
+            original_uuid = frappe.db.get_value("POS Invoice", return_against, "custom_eta_uuid")
+            if original_uuid:
+                frappe.log_error(f"Found UUID from POS Invoice custom_eta_uuid: {original_uuid} for {return_against}", "Get Original Receipt UUID - Success")
+                return original_uuid
+            # Try custom_eta_ereceipt_uuid as fallback
+            original_uuid = frappe.db.get_value("POS Invoice", return_against, "custom_eta_ereceipt_uuid")
+            if original_uuid:
+                frappe.log_error(f"Found UUID from POS Invoice custom_eta_ereceipt_uuid: {original_uuid} for {return_against}", "Get Original Receipt UUID - Success")
+                return original_uuid
+        except Exception as e:
+            frappe.log_error(f"Error getting custom UUID from POS Invoice: {str(e)}", "Get Original Receipt UUID")
+    
+    # Log warning if UUID not found with more details
+    # Check if the original document exists and what fields it has
+    try:
+        if original_doctype == "Sales Invoice":
+            doc_exists = frappe.db.exists("Sales Invoice", return_against)
+            if doc_exists:
+                eta_uuid_value = frappe.db.get_value("Sales Invoice", return_against, "eta_uuid")
+                custom_eta_uuid_value = None
+                try:
+                    custom_eta_uuid_value = frappe.db.get_value("Sales Invoice", return_against, "custom_eta_uuid")
+                except:
+                    pass
+                frappe.log_error(
+                    f"UUID not found for {return_against}. eta_uuid: {eta_uuid_value or 'None'}, custom_eta_uuid: {custom_eta_uuid_value or 'None'}",
+                    "Get Original Receipt UUID - UUID Not Found"
+                )
+            else:
+                frappe.log_error(
+                    f"Original Sales Invoice {return_against} does not exist",
+                    "Get Original Receipt UUID - Document Not Found"
+                )
+        elif original_doctype == "POS Invoice":
+            doc_exists = frappe.db.exists("POS Invoice", return_against)
+            if doc_exists:
+                custom_uuid = frappe.db.get_value("POS Invoice", return_against, "custom_eta_uuid")
+                frappe.log_error(
+                    f"UUID not found for {return_against}. custom_eta_uuid: {custom_uuid or 'None'}",
+                    "Get Original Receipt UUID - UUID Not Found"
+                )
+            else:
+                frappe.log_error(
+                    f"Original POS Invoice {return_against} does not exist",
+                    "Get Original Receipt UUID - Document Not Found"
+                )
+    except Exception as e:
+        frappe.log_error(
+            f"Error checking document: {str(e)[:100]}. Doc: {return_against}",
+            "Get Original Receipt UUID - Error"
+        )
+    
+    return ""
+
+
 def get_pos_ereceipt_header() -> ReceiptHeader:
     """Get the POS E-Receipt header."""
     header = ReceiptHeader(
@@ -466,6 +812,18 @@ def get_pos_ereceipt_header() -> ReceiptHeader:
         currency=POS_INVOICE_RAW_DATA.get("currency"),
         uuid=""
     )
+    
+    # Handle return receipts - populate previousUUID and referenceUUID
+    # For return receipts:
+    # - previousUUID: Reference to previous receipt (mandatory)
+    # - referenceUUID: Reference to The Sale Receipt (mandatory for return receipts)
+    is_return = POS_INVOICE_RAW_DATA.get("is_return", 0)
+    if is_return:
+        original_receipt_uuid = get_original_receipt_uuid()
+        if original_receipt_uuid:
+            header.previousUUID = original_receipt_uuid
+            header.referenceUUID = original_receipt_uuid  # Mandatory for return receipts according to ETA SDK
+    
     return header
 
 
@@ -589,6 +947,16 @@ def _get_item_metrics(_item: dict) -> Dict:
         or frappe.get_value("ETA Settings", "ETA Settings", "eta_item_code")
         or _item.get("item_code")
     )
+    
+    # For return receipts, convert negative values to positive
+    is_return = POS_INVOICE_RAW_DATA.get("is_return", 0)
+    if is_return:
+        net_sale = abs(net_sale)
+        total_sale = abs(total_sale)
+        item_total = abs(item_total)
+        # Convert tax amounts to positive
+        for tax_item in taxable_items:
+            tax_item.amount = abs(tax_item.amount)
 
     return {
         "unit_price": unit_price,
@@ -604,14 +972,19 @@ def _get_item_metrics(_item: dict) -> Dict:
 def get_pos_receipt_item_data() -> List[SingleItemData]:
     """Get the POS E-Receipt ItemData."""
     item_data = []
+    is_return = POS_INVOICE_RAW_DATA.get("is_return", 0)
+    
     for item in POS_INVOICE_RAW_DATA.get("items"):
         item_metrics = _get_item_metrics(item)
+        # For return receipts, convert negative quantity to positive
+        quantity = abs(item.get("qty")) if is_return else item.get("qty")
+        
         item_data.append(
             SingleItemData(
                 internalCode=item.get("item_code"),
                 description=item.get("item_name"),
                 itemType=item.get("eta_code_type", "EGS"),
-                quantity=item.get("qty"),
+                quantity=quantity,
                 itemCode=item_metrics.get("item_code"),
                 unitType=item_metrics.get("item_unit_type"),
                 unitPrice=item_metrics.get("unit_price"),
@@ -629,8 +1002,11 @@ def get_pos_receipt_item_data() -> List[SingleItemData]:
 
 def get_pos_receipt_tax_totals(taxableItems):
     total = collections.defaultdict(int)
+    is_return = POS_INVOICE_RAW_DATA.get("is_return", 0)
+    
     for item in taxableItems:
-        total[item.taxType] += frappe.utils.flt(item.amount, 5)
+        amount = abs(frappe.utils.flt(item.amount, 5)) if is_return else frappe.utils.flt(item.amount, 5)
+        total[item.taxType] += amount
 
     tax_totals = []
     for tax_type, amount in total.items():
@@ -639,5 +1015,4 @@ def get_pos_receipt_tax_totals(taxableItems):
             amount=amount
         )) 
     return tax_totals
-
 

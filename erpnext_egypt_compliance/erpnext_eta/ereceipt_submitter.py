@@ -122,7 +122,28 @@ class EReceiptSubmitter:
         """
         eta_session = ETASession().get_session()
         response = eta_session.post(url, headers=headers, data=data)
-        _eta_response = frappe._dict(response.json())
+        
+        # Log request details for debugging
+        try:
+            request_data = json.loads(data.decode('utf-8')) if isinstance(data, bytes) else data
+            frappe.log_error(
+                title="E-Receipt Submission - Request Details",
+                message=f"Request URL: {url}\nStatus Code: {response.status_code}\nRequest Data (first receipt): {json.dumps(request_data.get('receipts', [{}])[0] if request_data.get('receipts') else {}, indent=2, ensure_ascii=False)}",
+            )
+        except Exception:
+            pass  # Don't fail if logging fails
+        
+        try:
+            _eta_response = frappe._dict(response.json())
+        except json.JSONDecodeError:
+            # If response is not JSON, log the raw response
+            frappe.log_error(
+                title="E-Receipt Submission - Invalid JSON Response",
+                message=f"Status Code: {response.status_code}\nResponse Text: {response.text[:1000]}"
+            )
+            _eta_response = frappe._dict({"error": f"Invalid JSON response. Status: {response.status_code}", "status_code": response.status_code})
+            return _eta_response
+        
         _eta_response["status_code"] = response.status_code or None
         return _eta_response
 
@@ -166,21 +187,55 @@ class EReceiptSubmitter:
             ereceipts (dict): The submitted e-receipts.
             eta_log (Document): The ETA Log document.
         """
-        summary_message = (
-            f"Total no of receipts: {len(ereceipts.get('receipts'))}\n"
-            f"Total no of accepted: {len(eta_response.get('acceptedDocuments', []))}\n"
-            f"Total no of rejected: {len(eta_response.get('rejectedDocuments', []))}\n"
-        ).strip()
+        from erpnext_egypt_compliance.erpnext_eta.utils import parse_error_details
+        
+        rejected_docs = eta_response.get('rejectedDocuments', [])
+        accepted_docs = eta_response.get('acceptedDocuments', [])
+        
+        # Build detailed summary with rejection reasons
+        summary_parts = [
+            f"Total no of receipts: {len(ereceipts.get('receipts'))}",
+            f"Total no of accepted: {len(accepted_docs)}",
+            f"Total no of rejected: {len(rejected_docs)}"
+        ]
+        
+        # Add detailed rejection information
+        if rejected_docs:
+            summary_parts.append("\n--- Rejected Receipts Details ---")
+            for rejected_doc in rejected_docs:
+                receipt_num = rejected_doc.get("receiptNumber") or rejected_doc.get("internalId", "Unknown")
+                error_info = rejected_doc.get("error", {})
+                error_msg = parse_error_details(error_info) if error_info else "No error details provided"
+                summary_parts.append(f"\nReceipt: {receipt_num}")
+                summary_parts.append(f"Error: {error_msg}")
+                if rejected_doc.get("uuid"):
+                    summary_parts.append(f"UUID: {rejected_doc.get('uuid')}")
+        
+        summary_message = "\n".join(summary_parts)
+        
         submission_status = (
-            "Partially Succeeded" if (len(eta_response.get('acceptedDocuments', [])) < len(ereceipts.get('receipts', [])))
+            "Partially Succeeded" if (len(accepted_docs) < len(ereceipts.get('receipts', [])))
             else "Completed"
         )
         eta_log.status_code = eta_response.get("status_code", None)
         eta_log.submission_id = eta_response.get("submissionId")
         eta_log.submission_summary = summary_message
         eta_log.submission_status = submission_status
+        
+        # Log detailed error information
+        if rejected_docs:
+            error_details = json.dumps({
+                "rejected_documents": rejected_docs,
+                "full_response": eta_response
+            }, indent=2, ensure_ascii=False)
+            frappe.log_error(
+                title="E-Receipt Submission - Rejected Documents",
+                message=f"Receipts were rejected during submission.\n\n{summary_message}\n\nFull Response:\n{error_details}",
+                reference_doctype=doctype
+            )
+        
         eta_log.save()
-        eta_log.process_documents(eta_response, doctype, eta_log)
+        eta_log.process_documents(eta_response)
 
     def _handle_error_response(self, eta_response, initial_eta_log):
         """
@@ -190,10 +245,21 @@ class EReceiptSubmitter:
             eta_response (dict): The response from the ETA portal.
             initial_eta_log (Document): The initial log document.
         """
+        error_details = eta_response.get("error", {})
+        error_message = json.dumps(error_details, indent=2, ensure_ascii=False) if isinstance(error_details, dict) else str(error_details)
+        
         initial_eta_log.status_code = eta_response.get("status_code", None)
-        initial_eta_log.eta_response = str(eta_response.get("error"))
+        initial_eta_log.eta_response = error_message
         initial_eta_log.submission_status = "Failed"
         initial_eta_log.save()
+        
+        # Log detailed error information
+        full_response = json.dumps(eta_response, indent=2, ensure_ascii=False)
+        frappe.log_error(
+            title="E-Receipt Submission - Error Response",
+            message=f"ETA API returned an error response.\n\nError Details:\n{error_message}\n\nFull Response:\n{full_response}",
+            reference_doctype=initial_eta_log.from_doctype
+        )
 
     def _handle_exception(self, exception):
         """
