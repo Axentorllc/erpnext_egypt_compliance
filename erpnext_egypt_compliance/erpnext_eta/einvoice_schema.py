@@ -67,7 +67,7 @@ class InvoiceLine(BaseModel):
     netTotal: float
     total: float
     discount: Optional[List[Discount]] = Field(default=None)
-    taxableItems: List[TaxableItem]
+    taxableItems: Optional[List[TaxableItem]] = Field(default=None)
     unitValue: Value
     valueDifference: float = Field(default=0.0)
     totalTaxableFees: float = Field(default=0.0)
@@ -88,8 +88,9 @@ class InvoiceLine(BaseModel):
 
     @validator("taxableItems")
     def apply_eta_round_taxable_items(cls, value, values):
-        for tax in value:
-            tax.amount = eta_round(tax.amount)
+        if value:
+            for tax in value:
+                tax.amount = eta_round(tax.amount)
         return value
 
 
@@ -288,7 +289,7 @@ class Invoice(BaseModel):
     totalSalesAmount: float = Field(default=0.0)
     netAmount: float = Field(default=0.0)
     totalAmount: float = Field(default=0.0)
-    taxTotals: List[TaxTotals]
+    taxTotals: Optional[List[TaxTotals]] = Field(default=None)
     signatures: List[Signature] = Field(default=None)
 
     extraDiscountAmount: float = Field(default=0.0)
@@ -330,11 +331,12 @@ def get_invoice_asjson(docname: str, as_dict: bool=False):
     is_debit_note = INVOICE_RAW_DATA.get("is_debit_note")
     is_return = INVOICE_RAW_DATA.get("is_return")
 
-    # Priority order: Debit Note > Credit Note (Return) > Invoice
-    if is_debit_note:
-        document_type = "D"
-    elif is_return:
+    # Priority order: Credit Note (Return) > Debit Note > Invoice
+    # This ensures credit notes created from debit notes are submitted as credit notes
+    if is_return:
         document_type = "C"
+    elif is_debit_note:
+        document_type = "D"
     else:
         document_type = "I"
     
@@ -428,7 +430,7 @@ def get_issuer():
         name=COMPANY_DATA.get("eta_issuer_name"),
         address=IssuerAddress(
             branchId=INVOICE_RAW_DATA.get("branch_data").get("eta_branch_id"),
-            country=frappe.db.get_value("Country", COMPANY_DATA.get("country"), "code"),
+            country=frappe.db.get_value("Country", COMPANY_DATA.get("country"), "code").upper(),
             governate=INVOICE_RAW_DATA.get("branch_data").get("state"),
             regionCity=INVOICE_RAW_DATA.get("branch_data").get("city"),
             street=INVOICE_RAW_DATA.get("branch_data").get("address_line1"),
@@ -481,7 +483,7 @@ def get_receiver():
     if customer_address_name:
         customer_address = frappe.get_doc("Address", customer_address_name)
         address = ReceiverAddress(
-            country=frappe.db.get_value("Country", customer_address.country, "code"),
+            country=frappe.db.get_value("Country", customer_address.country, "code").upper(),
             governate=customer_address.state or "N/A",
             regionCity=customer_address.city or "N/A",
             street=customer_address.address_line1 or "N/A",
@@ -523,7 +525,9 @@ def validate_receiver_compliance(receiver: Receiver):
 
 
 def _get_item_total(_net_total: float, _taxable_items) -> float:
-    return sum([_net_total, sum(tax.amount for tax in _taxable_items)])
+    if _taxable_items:
+        return sum([_net_total, sum(tax.amount for tax in _taxable_items)])
+    return _net_total
 
 
 def _get_tax_amount(item_tax_detail: float, net_rate: float, qty: float, _exchange_rate: float) -> float:
@@ -581,7 +585,7 @@ def _get_item_taxable_items(_item_data: Dict):
                     rate=rate,
                 )
             )
-    return taxable_items
+    return taxable_items if taxable_items else None
 
 
 def _get_sales_and_net_totals(_item_data: Dict):
@@ -734,7 +738,7 @@ def get_tax_totals(invoice_lines):
 
             is_consolidated_or_pos = INVOICE_RAW_DATA.get("is_consolidated") or INVOICE_RAW_DATA.get("is_pos")
             if is_consolidated_or_pos:
-                tax_amount = sum([line.taxableItems[0].amount for line in invoice_lines])
+                tax_amount = sum([line.taxableItems[0].amount for line in invoice_lines if line.taxableItems])
 
             taxes.append(TaxTotals(taxType=tax_type, amount=tax_amount))
     return taxes

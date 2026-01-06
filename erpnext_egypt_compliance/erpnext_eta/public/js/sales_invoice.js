@@ -12,8 +12,23 @@ frappe.ui.form.on('Sales Invoice', {
 		frm.trigger('eta_submit_ereceipt')
 		frm.trigger('eta_add_download_pdf_button');
 		frm.trigger('eta_add_cancel_button');
+		frm.trigger('eta_add_debit_note_button');
 	},
 	refresh(frm) {
+		frm.trigger('eta_add_download_button');
+		frm.trigger('eta_add_submit_button');
+		frm.trigger('eta_fetch_status_button');
+		frm.trigger('eta_add_status_indicator');
+		frm.trigger('eta_add_download_e_receipt_button');
+		frm.trigger('eta_submit_ereceipt');
+		frm.trigger('eta_add_download_pdf_button');
+		frm.trigger('eta_add_cancel_button');
+		frm.trigger('eta_add_debit_note_button');
+	},
+	after_submit(frm) {
+		setTimeout(() => {
+			frm.reload_doc();
+		}, 500);
 	},
 	set_query_for_eta_sub_type(frm) { 
 		frm.set_query("eta_tax_sub_type", "taxes", function (doc, cdt, cdn) {
@@ -80,7 +95,6 @@ frappe.ui.form.on('Sales Invoice', {
 						console.log(r.message)
 						frappe.show_alert(r.message)
 						frm.trigger('fetch_eta_status')
-						// cur_frm.reload_doc();
 					}
 				}
 			})
@@ -262,5 +276,48 @@ frappe.ui.form.on('Sales Invoice', {
 				},
 			);
 		}, "ETA");
+	},
+	eta_add_debit_note_button(frm) {
+		if (frm.doc.docstatus === 1 && !frm.doc.is_return) {
+			frm.add_custom_button(__('Debit Note'), () => {
+				frm.trigger('make_debit_note');
+			}, __('Create'));
+		}
+	},
+	make_debit_note(frm) {
+		frappe.call({
+			method: 'erpnext.accounts.doctype.sales_invoice.sales_invoice.make_sales_return',
+			args: {
+				source_name: frm.doc.name
+			},
+			callback: function(r) {
+				if (r.message) {
+					let doc = frappe.model.sync(r.message)[0];
+					// Unselect Is Return (Credit Note)
+					doc.is_return = 0;
+					// Select Is Rate Adjustment Entry (Debit Note)
+					doc.is_debit_note = 1;
+					// Make quantities and amounts positive for Debit Note
+					if (doc.items) {
+						doc.items.forEach(function(item) {
+							item.qty = Math.abs(item.qty);
+							item.stock_qty = Math.abs(item.stock_qty || 0);
+							item.amount = Math.abs(item.amount || 0);
+							item.net_amount = Math.abs(item.net_amount || 0);
+						});
+					}
+					if (doc.taxes) {
+						doc.taxes.forEach(function(tax) {
+							tax.tax_amount = Math.abs(tax.tax_amount || 0);
+							tax.total = Math.abs(tax.total || 0);
+							tax.base_tax_amount = Math.abs(tax.base_tax_amount || 0);
+							tax.base_total = Math.abs(tax.base_total || 0);
+						});
+					}
+					// Open the new document
+					frappe.set_route('Form', doc.doctype, doc.name);
+				}
+			}
+		});
 	},
 })

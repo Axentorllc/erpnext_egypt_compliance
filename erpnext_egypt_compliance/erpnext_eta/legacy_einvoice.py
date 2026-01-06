@@ -131,7 +131,8 @@ def _get_inv_tax_total(inv, eta_invoice):
                 if inv.is_consolidated or inv.is_pos:
                     sum = 0.0
                     for i in eta_invoice.invoiceLines:
-                        sum += i.taxableItems[0].get("amount")
+                        if i.taxableItems:
+                            sum += i.taxableItems[0].get("amount")
                     _tax.amount = _eta_round(
                         sum,
                         decimal=frappe.get_precision("Sales Invoice Item", "net_rate") or 2,

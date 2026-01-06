@@ -13,7 +13,33 @@ from requests.adapters import HTTPAdapter
 import ssl
 import urllib3
 
+def get_default_eta_pos_connector():
+	"""Get the default ETA POS Connector."""
+	default_connector = frappe.db.get_value(
+		"ETA POS Connector",
+		{"is_default": 1},
+		"name"
+	)
+	return default_connector
+
+
 class ETAPOSConnector(Document):
+	def validate(self):
+		self.ensure_single_default()
+
+	def ensure_single_default(self):
+		"""Ensure only one default ETA POS Connector."""
+		if self.is_default:
+			existing = frappe.db.exists(
+				"ETA POS Connector",
+				{
+					"is_default": 1,
+					"name": ["!=", self.name]
+				}
+			)
+			if existing:
+				frappe.throw("There can only be one default ETA POS Connector.")
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.PREPROD_URL = "https://api.preprod.invoicing.eta.gov.eg/api/v1"

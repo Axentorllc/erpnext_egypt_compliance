@@ -83,45 +83,66 @@ class SingleExtraReceiptDiscountData(BaseModel):
 class SingleTaxableItems(BaseModel):
     taxType: str = Field(..., description="Tax type.")
     amount: float = Field(default=0.0)
-    subType: str = Field(default="", description="Sub type.")
+    subType: str = Field(..., description="Sub type.")
     rate: int = conint(ge=0, le=100)
 
     @validator("taxType")
     def validate_tax_types(cls, value, values):
+        # All ETA tax types (T1-T20)
         allowed_taxable_types = [
-            "T1",
-            "T2",
-            "T3",
-            "T4",
-            "T5",
-            "T6",
-            "T7",
-            "T8",
-            "T9",
-            "T10",
-            "T11",
-            "T12",
+            "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10",
+            "T11", "T12", "T13", "T14", "T15", "T16", "T17", "T18", "T19", "T20",
         ]
+        if not value:
+            raise ValueError("Tax type (eta_tax_type) is required. Please configure it in the Sales Taxes and Charges.")
         if value not in allowed_taxable_types:
-            raise ValueError(f"Invalid tax type. Allowed types are {allowed_taxable_types}")
+            raise ValueError(f"Invalid tax type '{value}'. Allowed types are {allowed_taxable_types}")
         return value
 
     @validator("subType")
     def validate_sub_types(cls, value, values):
+        # All ETA tax sub types
         allowed_sub_types = [
-            "V001",
-            "V002",
-            "V003",
-            "V004",
-            "V005",
-            "V006",
-            "V007",
-            "V008",
-            "V009",
-            "V010",
+            # T1 sub types (VAT)
+            "V001", "V002", "V003", "V004", "V005", "V006", "V007", "V008", "V009", "V010",
+            # T2/T3 sub types (Table tax)
+            "Tbl01", "Tbl02",
+            # T4 sub types (Withholding tax)
+            "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008",
+            "W009", "W010", "W011", "W012", "W013", "W014", "W015", "W016",
+            # T5/T6 sub types (Stamping tax)
+            "ST01", "ST02",
+            # T7 sub types (Entertainment tax)
+            "Ent01", "Ent02",
+            # T8 sub types (Resource development fee)
+            "RD01", "RD02",
+            # T9 sub types (Service charges)
+            "SC01", "SC02",
+            # T10 sub types (Municipality Fees)
+            "Mn01", "Mn02",
+            # T11 sub types (Medical insurance fee)
+            "MI01", "MI02",
+            # T12 sub types (Other fees)
+            "OF01", "OF02",
+            # T13/T14 sub types (Non-taxable Stamping tax)
+            "ST03", "ST04",
+            # T15 sub types (Non-taxable Entertainment tax)
+            "Ent03", "Ent04",
+            # T16 sub types (Non-taxable Resource development fee)
+            "RD03", "RD04",
+            # T17 sub types (Non-taxable Service charges)
+            "SC03", "SC04",
+            # T18 sub types (Non-taxable Municipality Fees)
+            "Mn03", "Mn04",
+            # T19 sub types (Non-taxable Medical insurance fee)
+            "MI03", "MI04",
+            # T20 sub types (Non-taxable Other fees)
+            "OF03", "OF04",
         ]
+        if not value:
+            raise ValueError("Tax sub type (eta_tax_sub_type) is required. Please configure it in the Sales Taxes and Charges.")
         if value not in allowed_sub_types:
-            raise ValueError(f"Invalid sub type. Allowed types are {allowed_sub_types}")
+            raise ValueError(f"Invalid sub type '{value}'. Allowed types are {allowed_sub_types}")
         return value
 
 
@@ -474,6 +495,16 @@ def download_eta_ereceipt_json(docname, file_content):
 @frappe.whitelist()
 def submit_ereceipt(docname, pos_profile, doctype="POS Invoice", raise_throw=True):
     """Submit the POS E-Receipt to the API."""
+    from erpnext_egypt_compliance.erpnext_eta.doctype.eta_pos_connector.eta_pos_connector import get_default_eta_pos_connector
+    
+    # Check if default ETA POS Connector exists
+    default_connector = get_default_eta_pos_connector()
+    if not default_connector:
+        frappe.throw(
+            _("No default ETA POS Connector found. Please set a default ETA POS Connector before submitting receipts."),
+            title=_("Missing Default ETA POS Connector")
+        )
+    
     try:
         ereceipt = build_erceipt_json(docname, doctype)
         receipt_dict = ereceipt.model_dump()
@@ -868,7 +899,7 @@ def get_pos_receipt_seller() -> ReceiptSeller:
     """Get the POS E-Receipt Seller."""
     branch = frappe.get_doc("Branch", COMPANY_DATA.get("eta_default_branch")).as_dict()
     branch_address = frappe.get_doc("Address", branch.get("eta_branch_address")).as_dict()
-    country_code = frappe.db.get_value("Country", branch_address.country, "code")
+    country_code = frappe.db.get_value("Country", branch_address.country, "code").upper()
     device_serial = str(frappe.db.get_value("ETA POS Connector", POS_INVOICE_RAW_DATA.get("pos_profile"), "serial_number"))
     seller = ReceiptSeller(
         rin=COMPANY_DATA.get("eta_tax_id"),
@@ -922,7 +953,10 @@ def _get_taxable_items(_item: dict) -> List[SingleTaxableItems]:
     taxable_items = []
     if POS_INVOICE_RAW_DATA.get("taxes"):
         for tax in POS_INVOICE_RAW_DATA.get("taxes"):
-            # TODO: Hardcoded, Type: T1, SubType: V009, amount=_get_tax_amount()
+            # Skip taxes marked as disabled for ETA
+            if tax.get("disable_eta"):
+                continue
+            
             item_wise_tax_detail_asjson = json.loads(tax.item_wise_tax_detail)
             items_tax_detail_list = ItemWiseTaxDetails(data=item_wise_tax_detail_asjson)
 
@@ -933,10 +967,22 @@ def _get_taxable_items(_item: dict) -> List[SingleTaxableItems]:
                 _item.get("qty"),
                 _item.get("_exchange_rate") or 1,
             )
+            
+            # Get actual tax type and sub type from the tax row
+            tax_type = tax.get("eta_tax_type")
+            sub_type = tax.get("eta_tax_sub_type")
+            
+            if not tax_type or not sub_type:
+                tax_account = tax.get("account_head") or tax.get("description") or "Unknown"
+                raise ValueError(
+                    f"ETA Tax Type and Sub Type are required for tax '{tax_account}'. "
+                    f"Please configure 'eta_tax_type' and 'eta_tax_sub_type' in the Sales Taxes and Charges."
+                )
+            
             taxable_items.append(
                 SingleTaxableItems(
-                    taxType="T1",
-                    subType="V001",
+                    taxType=tax_type,
+                    subType=sub_type,
                     amount=amount,
                     rate=item_tax_detail[0],
                 )
