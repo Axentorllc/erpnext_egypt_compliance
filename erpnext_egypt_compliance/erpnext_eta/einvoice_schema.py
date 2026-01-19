@@ -343,7 +343,8 @@ def get_invoice_asjson(docname: str, as_dict: bool=False):
     invoice_lines = get_invoice_lines()
     total_discount_amount = calculate_total_discount_amount(invoice_lines)
     total_sales_amount = sum([line.salesTotal for line in invoice_lines])
-    net_amount, total_amount = get_net_total_amount()
+    net_amount, __legacy_total_amount = get_net_total_amount()
+    total_amount = sum(line.total for line in invoice_lines)
     tax_totals = get_tax_totals(invoice_lines)
     signatures = get_signatures()
 
