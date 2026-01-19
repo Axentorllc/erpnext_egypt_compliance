@@ -698,26 +698,17 @@ def get_net_total_amount():
 
 
 def get_tax_totals(invoice_lines):
-    taxes = []
-    if INVOICE_RAW_DATA.get("taxes"):
-        for tax in INVOICE_RAW_DATA.get("taxes"):
-            if tax.get("disable_eta"):
-                continue
-            tax_type = tax.get("eta_tax_type")
-
-            is_foreign_currency = INVOICE_RAW_DATA.get("_foreign_company_currency")
-            _exchange_rate = INVOICE_RAW_DATA.get("_exchange_rate") or 1
-            if is_foreign_currency:
-                tax_amount = tax.get("base_tax_amount_after_discount_amount") * _exchange_rate
-            else:
-                tax_amount = tax.get("tax_amount_after_discount_amount")
-
-            is_consolidated_or_pos = INVOICE_RAW_DATA.get("is_consolidated") or INVOICE_RAW_DATA.get("is_pos")
-            if is_consolidated_or_pos:
-                tax_amount = sum([line.taxableItems[0].amount for line in invoice_lines])
-
-            taxes.append(TaxTotals(taxType=tax_type, amount=tax_amount))
-    return taxes
+    """Calculate tax totals by summing line-level taxableItems amounts."""                                                            
+    tax_sums = {}                                                      
+    for line in invoice_lines:                                         
+        for tax_item in line.taxableItems:                             
+            tax_type = tax_item.taxType                                
+            if tax_type not in tax_sums:                               
+                tax_sums[tax_type] = 0.0                               
+            tax_sums[tax_type] += tax_item.amount                      
+                                                                        
+    return [TaxTotals(taxType=tax_type, amount=eta_round(amount))      
+            for tax_type, amount in tax_sums.items()] 
 
 
 def get_signatures():
