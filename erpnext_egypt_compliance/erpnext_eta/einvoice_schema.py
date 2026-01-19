@@ -532,48 +532,26 @@ def _get_tax_amount(item_tax_detail: float, net_rate: float, qty: float, _exchan
     return item_tax_detail * net_rate * qty * _exchange_rate
 
 
-def _get_item_taxable_items(_item_data: Dict):
+def _get_item_taxable_items(_item_data: Dict, net_total: float):
+    """Calculate taxable items - use net_total as tax base."""
     taxable_items = []
     if INVOICE_RAW_DATA.get("taxes"):
         for tax in INVOICE_RAW_DATA.get("taxes"):
             if tax.get("disable_eta"):
                 continue
 
+            tax_type = tax.get("eta_tax_type")
+            sub_type = tax.get("eta_tax_sub_type")
+
             item_wise_tax_detail_asjson = json.loads(tax.get("item_wise_tax_detail"))
             items_tax_detail_list = ItemWiseTaxDetails(data=item_wise_tax_detail_asjson)
             item_tax_detail = items_tax_detail_list.data.get(_item_data.get("item_code"))
 
-            # default values
-            tax_type = tax.get("eta_tax_type")
-            sub_type = tax.get("eta_tax_sub_type")
-            rate, amount = None, None
+            rate = item_tax_detail[0]
 
-            if tax.get("charge_type") in ("On Net Total", "On Previous Row Total"):
-                rate = item_tax_detail[0]
-
-                item_rate = (
-                    _item_data.get("rate")
-                    if INVOICE_RAW_DATA.get("_foreign_company_currency")
-                    else _item_data.get("net_rate")
-                )
-                amount = _get_tax_amount(
-                    (item_tax_detail[0] / 100),
-                    item_rate,
-                    _item_data.get("qty"),
-                    _item_data.get("_exchange_rate") or 1,
-                )
-            elif tax.get("charge_type") == "Actual" and (
-                INVOICE_RAW_DATA.get("is_consolidated") or INVOICE_RAW_DATA.get("is_pos")
-            ):
-                if tax_type == "T1":
-                    rate = 14
-                    item_rate = _item_data.get("net_rate")
-                    amount = _get_tax_amount(
-                        (item_tax_detail[0] / 100),
-                        item_rate,
-                        _item_data.get("qty"),
-                        _item_data.get("_exchange_rate") or 1,
-                    )
+            # HOTFIX: Use net_total (already in EGP) as tax base
+            # TODO: Test & Support the Tax Price inclusive.
+            amount = eta_round(net_total * rate / 100)
 
             taxable_items.append(
                 TaxableItem(
@@ -649,7 +627,7 @@ def _get_item_data(_item_data: Dict):
     )
     unit_value = _get_item_unit_value(_item_data)
     sales_total, net_total = _get_sales_and_net_totals(_item_data)
-    taxable_items = _get_item_taxable_items(_item_data)
+    taxable_items = _get_item_taxable_items(_item_data, net_total)
     item_total = _get_item_total(net_total, taxable_items)
     # TODO:
     item_discount = None
