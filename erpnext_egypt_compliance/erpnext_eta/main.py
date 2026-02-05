@@ -88,6 +88,10 @@ def get_batch_invoices(company):
                 inv = get_invoice_asjson(docname, as_dict=True)
                 einvoices.append(inv)
 
+        if not einvoices:
+            frappe.logger().error(f"No invoices to submit for {company}")
+            return  
+        
         submit_einvoice_background_logger(einvoices, connector , submitted_by="Agent")
                
                  
