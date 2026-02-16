@@ -187,13 +187,28 @@ class ReceiptBuyer(BaseModel):
     @validator("id")
     def validate_id(cls, value, values):
         # TODO: P/F cases
+        customer = POS_INVOICE_RAW_DATA.get("customer")
+        customer_tax_id = frappe.db.get_value("Customer", customer, "tax_id")
+
         if values.get("type") == "B":
             # Company Registration No. (RIN)
-            value = COMPANY_DATA.get("eta_tax_id")
-        if values.get("type") == "P":
-            value = frappe.db.get_value("Customer", POS_INVOICE_RAW_DATA.get("customer"), "tax_id")
+            if not customer_tax_id or len(str(customer_tax_id)) != 14:
+                frappe.throw(
+                _("Customer {0} must have a valid 14-digit Tax ID for business receipts.").format(customer),
+                title=_("ETA Validation"),
+            )
+            return customer_tax_id
+        
+        if values.get("type") == "P" and POS_INVOICE_RAW_DATA.get('grand_total') >= 150000:
+            if not customer_tax_id or len(str(customer_tax_id)) != 14:
+                frappe.throw(
+                    _("Customer {0} must have a valid Tax ID (14 digits) for e-receipts with grand total equal or above 150,000 EGP.").format(customer),
+                    title=_("ETA Validation"),
+                )
+            return customer_tax_id
 
-        return value
+        return customer_tax_id or ""
+
 
     @validator("name")
     def get_default_name(cls, value, values):
@@ -611,7 +626,7 @@ def get_pos_receipt_item_data() -> List[SingleItemData]:
             SingleItemData(
                 internalCode=item.get("item_code"),
                 description=item.get("item_name"),
-                itemType=item.get("eta_code_type", "GS1"),
+                itemType=item.get("eta_code_type", "EGS"),
                 quantity=item.get("qty"),
                 itemCode=item_metrics.get("item_code"),
                 unitType=item_metrics.get("item_unit_type"),
