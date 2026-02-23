@@ -188,7 +188,7 @@ class ReceiptBuyer(BaseModel):
     def validate_id(cls, value, values):
         # TODO: P/F cases
         customer = POS_INVOICE_RAW_DATA.get("customer")
-        customer_tax_id = frappe.db.get_value("Customer", customer, "tax_id")
+        customer_tax_id = frappe.db.get_value("Customer", customer, "tax_id") or ""
 
         if values.get("type") == "B":
             # Company Registration No. (RIN)
