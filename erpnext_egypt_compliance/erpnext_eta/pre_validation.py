@@ -9,23 +9,31 @@ def validate_eta_invoice_before_submit(doc, method=None):
     """
     Pre-validate Sales Invoice using the same Pydantic validation that ETA submission uses.
     This prevents users from submitting invoices with incomplete Master Data.
+    For POS invoices, runs e-receipt validation instead of e-invoice validation.
     """
+    is_pos = bool(doc.get("pos_profile"))
     company = frappe.get_value("Sales Invoice", doc.name, "company")
+    enable_ereceipt = frappe.get_value("Company", company, "custom_enable_ereceipt")
+
+    if enable_ereceipt:
+        if is_pos:
+            _validate_ereceipt_before_submit(doc)
+            return
+
+    # === E-Invoice validation for regular Sales Invoices ===
     connector = get_company_eta_connector(company)
-    
+
     if not connector:
         return
-    
+
     # Skip if signature start date not reached
     if connector.signature_start_date and getdate(doc.posting_date) < getdate(connector.signature_start_date):
         return
-    
+
     try:
-        # Run the same Pydantic validation used during ETA submission
         get_invoice_asjson(doc.name,as_dict=True)
-        
+
     except ValidationError as e:
-        # Parse Pydantic validation errors and create user-friendly messages
         error_messages = parse_pydantic_errors(e)
         frappe.throw(
             _("Invoice cannot be submitted due to incomplete ETA Master Data:<br><br>{0}").format(
@@ -103,6 +111,25 @@ def validate_eta_invoice_data(docname):
         doc = frappe.get_doc("Sales Invoice", docname)
         validate_eta_invoice_before_submit(doc)
         return {"status": "success", "message": _("ETA validation passed successfully")}
-        
+
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+def _validate_ereceipt_before_submit(doc):
+    """
+    Run e-receipt Pydantic validation (mirrors e-invoice validation but for receipts).
+    Raises a user-friendly error if validation fails.
+    """
+    from erpnext_egypt_compliance.erpnext_eta.ereceipt_schema import build_erceipt_json
+
+    try:
+        build_erceipt_json(doc.name, doctype=doc.doctype)
+    except ValidationError as e:
+        error_messages = parse_pydantic_errors(e)
+        frappe.throw(
+            _("Receipt cannot be submitted due to incomplete ETA Master Data:<br><br>{0}").format(
+                "<br>".join(error_messages)
+            ),
+            title=_("ETA E-Receipt Validation Failed")
+        )

@@ -110,6 +110,7 @@ fixtures = [
                     "Company-eta_issuer_name",
                     "Company-eta_default_branch",
                     "Company-eta_default_activity_code",
+                    "Company-custom_enable_ereceipt",
                     # "Company-eta_document_type_version",
                     # "Company-eta_company_environment",
                     "Address-building_number",
