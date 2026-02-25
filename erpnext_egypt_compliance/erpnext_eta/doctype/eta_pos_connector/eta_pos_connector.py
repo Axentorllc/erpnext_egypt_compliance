@@ -33,9 +33,11 @@ class ETAPOSConnector(Document):
 			access_token = self.get_password(fieldname="access_token", raise_exception=False)
 		else:
 			access_token = self.refresh_eta_token()
+		# Add 3-minute buffer before expiry (matches B2B connector behavior)
+		expiry_with_buffer = frappe.utils.add_to_date(get_datetime(now()), minutes=3)
 		return (
 			access_token
-			if (access_token and get_datetime(now()) < get_datetime(self.expires_in))
+			if (access_token and expiry_with_buffer < get_datetime(self.expires_in))
 			else self.refresh_eta_token()
 		)
 
@@ -58,14 +60,42 @@ class ETAPOSConnector(Document):
 			headers=headers
 		)
 
-		if response.status_code == 200:
-			eta_response = response.json()
-			if eta_response.get("access_token"):
-				self.access_token = eta_response.get("access_token")
-				self.expires_in = frappe.utils.add_to_date(now(), seconds=eta_response.get("expires_in"))
-				self.save(ignore_permissions=True)
-				frappe.db.commit()
-				return eta_response.get("access_token")
+		# Handle non-200 responses explicitly
+		if response.status_code != 200:
+			error_detail = ""
+			try:
+				error_detail = response.json()
+			except Exception:
+				error_detail = response.text
+			frappe.log_error(
+				title="ETA POS Token Refresh Failed",
+				message=f"HTTP {response.status_code}: {error_detail}",
+			)
+			frappe.throw(
+				frappe._("Failed to refresh ETA POS access token (HTTP {0}): {1}").format(
+					response.status_code, str(error_detail)[:200]
+				),
+				title=frappe._("ETA Authentication Error"),
+			)
+
+		# Check for access token in response
+		eta_response = response.json()
+		if not eta_response.get("access_token"):
+			frappe.log_error(
+				title="ETA POS Token Refresh Failed",
+				message=f"ETA returned 200 but no access_token. Response: {eta_response}",
+			)
+			frappe.throw(
+				frappe._("ETA identity server returned success but no access token was received."),
+				title=frappe._("ETA Authentication Error"),
+			)
+
+		# Token refresh successful
+		self.access_token = eta_response.get("access_token")
+		self.expires_in = frappe.utils.add_to_date(now(), seconds=eta_response.get("expires_in"))
+		self.save(ignore_permissions=True)
+		frappe.db.commit()
+		return eta_response.get("access_token")
 			
   
 class ETASession:
