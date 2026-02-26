@@ -5,22 +5,40 @@ from erpnext_egypt_compliance.erpnext_eta.einvoice_schema import get_invoice_asj
 from frappe.utils import getdate, nowdate
 from erpnext_egypt_compliance.erpnext_eta.utils import get_company_eta_connector
 
-def validate_eta_invoice_before_submit(doc, method=None):
+def validate_eta_before_submit(doc, method=None):
     """
     Pre-validate Sales Invoice using the same Pydantic validation that ETA submission uses.
     This prevents users from submitting invoices with incomplete Master Data.
     For POS invoices, runs e-receipt validation instead of e-invoice validation.
+
+    Detection logic:
+    - POS Invoice doctype → always POS
+    - Sales Invoice + pos_profile → POS from POSAwesome
     """
     is_pos = bool(doc.get("pos_profile"))
     company = frappe.get_value("Sales Invoice", doc.name, "company")
     enable_ereceipt = frappe.get_value("Company", company, "custom_enable_ereceipt")
 
-    if enable_ereceipt:
-        if is_pos:
-            _validate_ereceipt_before_submit(doc)
+    if enable_ereceipt and is_pos:
+        pos_profile = doc.get("pos_profile")
+        # Check if ETA POS Connector is configured for this POS Profile
+        pos_connector = _get_eta_pos_connector_for_profile(pos_profile, throw_if_missing=False)
+
+        if not pos_connector:
+            # E-Receipt enabled but no connector configured for this POS Profile → warn and allow local submission
+            frappe.msgprint(
+                _("E-Receipt is enabled for company {0}, but no ETA POS Connector is configured for POS Profile '{1}'. "
+                  "Receipt will be submitted locally only.").format(company, pos_profile),
+                alert=True,
+                indicator="orange"
+            )
             return
 
-    # === E-Invoice validation for regular Sales Invoices ===
+        # Connector exists → validate e-receipt format
+        _validate_ereceipt_before_submit(doc)
+        return
+
+    # === E-INVOICE PATH (Regular Sales Invoice without POS) ===
     connector = get_company_eta_connector(company)
 
     if not connector:
@@ -109,11 +127,51 @@ def validate_eta_invoice_data(docname):
     """
     try:
         doc = frappe.get_doc("Sales Invoice", docname)
-        validate_eta_invoice_before_submit(doc)
+        validate_eta_before_submit(doc)
         return {"status": "success", "message": _("ETA validation passed successfully")}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+def _get_eta_pos_connector_for_profile(pos_profile, throw_if_missing=False):
+    """
+    Get the ETA POS Connector linked to a specific POS Profile.
+
+    Args:
+        pos_profile (str): POS Profile name/docname
+        throw_if_missing (bool): If True, throw error if connector not found
+
+    Returns:
+        Document: ETAPOSConnector document or None
+    """
+    if not pos_profile:
+        return None
+
+    try:
+        # ETA POS Connector is directly linked to POS Profile (unique 1:1 relationship)
+        connector_name = frappe.get_value(
+            "ETA POS Connector",
+            filters={"pos_profile": pos_profile, "disabled": 0},
+            fieldname="name"
+        )
+
+        if not connector_name:
+            if throw_if_missing:
+                frappe.throw(
+                    _("No active ETA POS Connector found for POS Profile '{0}'. "
+                      "Please configure ETA POS Connector to submit e-receipts.").format(pos_profile),
+                    title=_("ETA POS Connector Not Found")
+                )
+            return None
+
+        return frappe.get_doc("ETA POS Connector", connector_name)
+
+    except Exception as e:
+        frappe.log_error(f"Error fetching ETA POS Connector for POS Profile '{pos_profile}': {str(e)}")
+        if throw_if_missing:
+            raise
+        return None
 
 
 def _validate_ereceipt_before_submit(doc):
