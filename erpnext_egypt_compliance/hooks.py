@@ -19,7 +19,7 @@ doctype_js = {
 
 doc_events = {
     "Sales Invoice": {
-        "before_submit": "erpnext_egypt_compliance.erpnext_eta.pre_validation.validate_eta_invoice_before_submit",
+        "before_submit": "erpnext_egypt_compliance.erpnext_eta.pre_validation.validate_eta_before_submit",
     },
 }
 
@@ -110,6 +110,7 @@ fixtures = [
                     "Company-eta_issuer_name",
                     "Company-eta_default_branch",
                     "Company-eta_default_activity_code",
+                    "Company-custom_enable_ereceipt",
                     # "Company-eta_document_type_version",
                     # "Company-eta_company_environment",
                     "Address-building_number",

@@ -602,7 +602,7 @@ def _get_item_metrics(_item: dict) -> Dict:
     )
     item_code = (
         _item.get("eta_item_code")
-        or frappe.get_value("ETA Settings", "ETA Settings", "eta_item_code")
+        or frappe.get_value("Item", _item.get("item_code"), "eta_item_code")
         or _item.get("item_code")
     )
     return {
