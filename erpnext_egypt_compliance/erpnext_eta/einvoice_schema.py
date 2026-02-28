@@ -480,28 +480,46 @@ def get_receiver():
             title=_("ETA Validation"),
         )
 
-    if customer_address_name:
-        customer_address = frappe.get_doc("Address", customer_address_name)
-        address = ReceiverAddress(
-            country=frappe.db.get_value("Country", customer_address.country, "code"),
-            governate=customer_address.state,
-            regionCity=customer_address.city,
-            street=customer_address.address_line1,
-            buildingNumber=customer_address.building_number or "B0"
-            # postalCode=customer_address.pincode or None,
-            # floor=customer_address.floor or None,
-            # room=customer_address.room or None,
-            # landmark=customer_address.landmark or None,
-            # additionalInformation=customer_address.address_line2 or None,
-        )
+  if customer_address_name:
+    customer_address = frappe.get_doc("Address", customer_address_name)
 
-    eta_receiver = Receiver(
-        type=customer_type,
-        id=customer_id,
-        name=customer.get("customer_name"),
-        address=address,
+    address = ReceiverAddress(
+        country=frappe.db.get_value("Country", customer_address.country, "code"),
+        governate=customer_address.state or "NA",
+        regionCity=customer_address.city or "NA",
+        street=customer_address.address_line1 or "NA",
+        buildingNumber=customer_address.building_number or "B0",
+        postalCode=customer_address.pincode or None,
+        floor=customer_address.floor or None,
+        room=customer_address.room or None,
+        landmark=customer_address.landmark or None,
+        additionalInformation=customer_address.address_line2 or None,
     )
-    return eta_receiver
+
+else:
+    # fallback address if customer doesn't have Address Doc
+    address = ReceiverAddress(
+        country="EG",
+        governate="Egypt",
+        regionCity="EG City",
+        street="Street 1",
+        buildingNumber="B0",
+        postalCode=None,
+        floor=None,
+        room=None,
+        landmark=None,
+        additionalInformation=None,
+    )
+
+eta_receiver = Receiver(
+    type=customer_type,
+    id=customer_id,
+    name=customer.get("customer_name"),
+    address=address,
+)
+
+return eta_receiver
+
 
 def validate_receiver_compliance(receiver: Receiver):
     """Validate ETA compliance rules for receiver before submission."""
