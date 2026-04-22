@@ -23,6 +23,8 @@ doc_events = {
     },
 }
 
+after_migrate = "erpnext_egypt_compliance.migrate.after_migrate"
+after_uninstall = "erpnext_egypt_compliance.uninstall.after_uninstall"
 
 # User Data Protection
 # --------------------
