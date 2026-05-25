@@ -71,6 +71,7 @@ def get_batch_invoices(company):
             ],
             pluck="name",
             limit=batch_size,
+            order_by="creation",  # v16 default list sort flipped modified->creation; submit oldest-first explicitly
         )
 
         for docname in docs:
