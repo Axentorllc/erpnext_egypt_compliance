@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field, conint, validator
 from erpnext_egypt_compliance.erpnext_eta.utils import (
     eta_datetime_issued_format,
     get_company_eta_connector,
+    get_item_tax_rate,
 )
 from frappe import _
 from erpnext_egypt_compliance.erpnext_eta.ereceipt_submitter import EReceiptSubmitter
@@ -542,13 +543,13 @@ def _get_taxable_items(_item: dict) -> List[SingleTaxableItems]:
     taxable_items = []
     if POS_INVOICE_RAW_DATA.get("taxes"):
         for tax in POS_INVOICE_RAW_DATA.get("taxes"):
-            # TODO: Hardcoded, Type: T1, SubType: V009, amount=_get_tax_amount()
-            item_wise_tax_detail_asjson = json.loads(tax.item_wise_tax_detail)
-            items_tax_detail_list = ItemWiseTaxDetails(data=item_wise_tax_detail_asjson)
-
-            item_tax_detail = items_tax_detail_list.data.get(_item.get("item_code"))
+            rate = get_item_tax_rate(
+                POS_INVOICE_RAW_DATA, _item.get("name"), tax.get("name"), _item.get("item_code"), tax
+            )
+            if rate is None:
+                continue
             amount = _get_tax_amount(
-                (item_tax_detail[0] / 100),
+                (rate / 100),
                 _item.get("net_rate"),
                 _item.get("qty"),
                 _item.get("_exchange_rate") or 1,

@@ -12,8 +12,8 @@ from erpnext_egypt_compliance.erpnext_eta.utils import (
     eta_datetime_issued_format,
     validate_allowed_values,
     eta_round,
+    get_item_tax_rate,
 )
-from erpnext_egypt_compliance.erpnext_eta.ereceipt_schema import ItemWiseTaxDetails
 from erpnext_egypt_compliance.erpnext_eta.legacy_einvoice import _abs_values
 INVOICE_RAW_DATA = {}
 COMPANY_DATA = {}
@@ -570,14 +570,12 @@ def _get_item_taxable_items(_item_data: Dict, net_total: float):
             tax_type = tax.get("eta_tax_type")
             sub_type = tax.get("eta_tax_sub_type")
 
-            item_wise_tax_detail_asjson = json.loads(tax.get("item_wise_tax_detail"))
-            items_tax_detail_list = ItemWiseTaxDetails(data=item_wise_tax_detail_asjson)
-            item_tax_detail = items_tax_detail_list.data.get(_item_data.get("item_code"))
+            rate = get_item_tax_rate(
+                INVOICE_RAW_DATA, _item_data.get("name"), tax.get("name"), _item_data.get("item_code"), tax
+            )
+            if rate is None:
+                continue
 
-            rate = item_tax_detail[0]
-
-            # HOTFIX: Use net_total (already in EGP) as tax base
-            # TODO: Test & Support the Tax Price inclusive.
             amount = eta_round(net_total * rate / 100)
 
             taxable_items.append(

@@ -49,6 +49,18 @@ def eta_round(_value: float, decimal: int = 5) -> float:
 	return round(_value, precision)
 
 
+def get_item_tax_rate(invoice_data, item_row, tax_row, item_code=None, tax=None):
+	for d in (invoice_data.get("item_wise_tax_details") or []):
+		if d.get("tax_row") == tax_row and d.get("item_row") == item_row:
+			return d.get("rate")
+	legacy = tax.get("item_wise_tax_detail") if tax else None
+	if legacy:
+		row = json.loads(legacy).get(item_code)
+		if row:
+			return row[0]
+	return None
+
+
 # --- eta_helper.py ---
 def get_company_eta_connector(company, throw_if_no_connector=True):
 	connector = frappe.get_list(
