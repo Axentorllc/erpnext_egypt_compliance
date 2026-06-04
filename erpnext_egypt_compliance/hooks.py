@@ -8,6 +8,7 @@ app_icon = "octicon octicon-file-directory"
 app_color = "grey"
 app_email = "apps@axentor.co"
 app_license = "CC"
+required_apps = ["frappe/erpnext"]
 
 
 doctype_js = {
