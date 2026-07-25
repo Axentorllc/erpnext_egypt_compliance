@@ -6,13 +6,25 @@ from erpnext_egypt_compliance.erpnext_eta.utils import eta_round
 import erpnext_egypt_compliance.erpnext_eta.einvoice_schema as einvoice_schema
 from erpnext_egypt_compliance.erpnext_eta.einvoice_schema import (
     Discount,
+    ReceiverAddress,
     _get_item_code_and_type,
     _get_item_unit_value,
     _get_sales_and_net_totals,
     _resolve_show_discount,
     get_net_total_amount,
+    get_receiver,
     Value,
 )
+
+
+class _FakeDoc(dict):
+    """Minimal stand-in for a frappe Document: supports both attribute and dict-style access."""
+
+    def __getattr__(self, name):
+        return self.get(name)
+
+    def as_dict(self):
+        return dict(self)
 
 
 def test_eta_round(db_transaction):
@@ -275,3 +287,75 @@ def test_resolve_show_discount(monkeypatch, company_flag, price_list_flag, selli
     monkeypatch.setattr(frappe, "get_value", lambda *args, **kwargs: price_list_flag)
     company_data = {"show_discount_on_tax_invoice": company_flag}
     assert _resolve_show_discount(company_data, selling_price_list) is expected
+
+
+def _mock_customer(**overrides):
+    customer = {
+        "name": "Cust A",
+        "customer_name": "Cust A",
+        "eta_receiver_type": "B",
+        "tax_id": "123456789",
+        "customer_primary_address": None,
+    }
+    customer.update(overrides)
+    return customer
+
+
+def test_get_receiver_without_primary_address_uses_placeholder(monkeypatch):
+    """Customer with no primary address must not crash — falls back to the placeholder address."""
+    monkeypatch.setattr(einvoice_schema, "INVOICE_RAW_DATA", {"customer": "Cust A"})
+    monkeypatch.setattr(frappe, "get_doc", lambda doctype, name=None: _FakeDoc(_mock_customer()))
+
+    receiver = get_receiver()
+
+    assert receiver.address == ReceiverAddress(
+        country="EG", governate="Egypt", regionCity="EG City", street="Street 1", buildingNumber="B0"
+    )
+
+
+def test_get_receiver_falls_back_to_city_when_state_missing(monkeypatch):
+    """governate/regionCity must never be None even when the Address doctype's state is blank."""
+    monkeypatch.setattr(einvoice_schema, "INVOICE_RAW_DATA", {"customer": "Cust A"})
+
+    def _fake_get_doc(doctype, name=None):
+        if doctype == "Customer":
+            return _FakeDoc(_mock_customer(customer_primary_address="Addr-1"))
+        return _FakeDoc(
+            {"country": "Egypt", "state": None, "city": "giza", "address_line1": "Street X", "building_number": None}
+        )
+
+    monkeypatch.setattr(frappe, "get_doc", _fake_get_doc)
+    monkeypatch.setattr(frappe.db, "get_value", lambda *args, **kwargs: "eg")
+
+    receiver = get_receiver()
+
+    assert receiver.address == ReceiverAddress(
+        country="EG", governate="giza", regionCity="giza", street="Street X", buildingNumber="B0"
+    )
+
+
+def test_get_receiver_uses_complete_customer_address(monkeypatch):
+    """A fully populated Address is passed through as-is (country code uppercased)."""
+    monkeypatch.setattr(einvoice_schema, "INVOICE_RAW_DATA", {"customer": "Cust A"})
+
+    def _fake_get_doc(doctype, name=None):
+        if doctype == "Customer":
+            return _FakeDoc(_mock_customer(customer_primary_address="Addr-1"))
+        return _FakeDoc(
+            {
+                "country": "Egypt",
+                "state": "Giza",
+                "city": "6th of October",
+                "address_line1": "Industrial Zone",
+                "building_number": "12",
+            }
+        )
+
+    monkeypatch.setattr(frappe, "get_doc", _fake_get_doc)
+    monkeypatch.setattr(frappe.db, "get_value", lambda *args, **kwargs: "eg")
+
+    receiver = get_receiver()
+
+    assert receiver.address == ReceiverAddress(
+        country="EG", governate="Giza", regionCity="6th of October", street="Industrial Zone", buildingNumber="12"
+    )
