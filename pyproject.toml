@@ -1,16 +1,36 @@
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "erpnext_egypt_compliance"
+authors = [
+    { name = "Axentor, LLC", email = "apps@axentor.co" },
+]
+description = "Integration for Egyptian Tax Authority"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    # pydantic v2 is required: schemas call .model_dump()/.model_dump_json()
+    "pydantic>=2.0,<3",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest_frappe",
+]
+
+[tool.bench.frappe-dependencies]
+frappe = ">=15.0.0,<17.0.0"
+erpnext = ">=15.0.0,<17.0.0"
+
 [tool.black]
 line-length = 120
 
 [tool.pytest.ini_options]
-addopts = "-p no:warnings -vvs --sites-path=/workspace/development/frappe-bench-14/sites"
-
-[project]
-name = "erpnext_egypt_compliance"
-version = "0.0.1"
-dependencies = ["pytest_frappe", "pydantic"]
-
-[tool.bench.frappe-dependencies]
-frappe = ">=15.0.0,<16.0.0-dev"
+# sites-path is passed on the command line (e.g. --sites-path=<bench>/sites)
+addopts = "-p no:warnings -vvs"
 
 [tool.ruff]
 select = [

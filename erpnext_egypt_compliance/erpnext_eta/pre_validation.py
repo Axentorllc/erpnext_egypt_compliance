@@ -39,7 +39,12 @@ def validate_eta_before_submit(doc, method=None):
         return
 
     # === E-INVOICE PATH (Regular Sales Invoice without POS) ===
-    connector = get_company_eta_connector(company)
+    # Do not throw when the company has no default connector. This hook runs on
+    # Sales Invoice before_submit, so throwing here rejects *every* sales invoice
+    # on a site that has not configured e-invoicing yet — including sites that
+    # never will. The `if not connector` guard directly below already encodes the
+    # intended behaviour (skip validation); the lookup simply defaulted to raising.
+    connector = get_company_eta_connector(company, throw_if_no_connector=False)
 
     if not connector:
         return
