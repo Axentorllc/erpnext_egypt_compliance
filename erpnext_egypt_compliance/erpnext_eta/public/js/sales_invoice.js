@@ -3,13 +3,15 @@ frappe.ui.form.on('Sales Invoice', {
 		frm.trigger('set_query_for_eta_sub_type');
 	},
 	refresh(frm) {
+		// The form page is shared across invoices, so update the pill for new docs too
+		frm.trigger('eta_add_status_indicator');
+
 		// Custom buttons are cleared on every refresh, so add them here and not in onload
 		if (frm.is_new()) return;
 
 		frm.trigger('eta_add_download_button');
 		frm.trigger('eta_add_submit_button');
 		frm.trigger('eta_fetch_status_button');
-		frm.trigger('eta_add_status_indicator');
 		frm.trigger('eta_add_download_e_receipt_button')
 		frm.trigger('eta_submit_ereceipt')
 		frm.trigger('eta_add_download_pdf_button');
