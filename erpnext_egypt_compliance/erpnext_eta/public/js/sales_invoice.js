@@ -98,10 +98,12 @@ frappe.ui.form.on('Sales Invoice', {
 									docname: frm.doc.name,
 									submission_reason: values.submission_reason
 								},
+								freeze: true,
+								freeze_message: __("Submitting to ETA..."),
 								callback: function(r) {
-									if (r.message) {
+									// submit_eta_invoice returns nothing, so check for errors and not r.message
+									if (!r.exc) {
 										console.log(r.message)
-										frappe.show_alert(r.message)
 										frm.trigger('fetch_eta_status')
 									}
 								}
@@ -115,10 +117,12 @@ frappe.ui.form.on('Sales Invoice', {
 						frappe.call({
 							method: 'erpnext_egypt_compliance.erpnext_eta.main.submit_eta_invoice',
 							args: {	docname: frm.doc.name },
+							freeze: true,
+							freeze_message: __("Submitting to ETA..."),
 							callback: function(r) {
-								if (r.message) {
+								// submit_eta_invoice returns nothing, so check for errors and not r.message
+								if (!r.exc) {
 									console.log(r.message)
-									frappe.show_alert(r.message)
 									frm.trigger('fetch_eta_status')
 								}
 							}
@@ -198,6 +202,8 @@ frappe.ui.form.on('Sales Invoice', {
 					callback: function (r) {
 						if (!r.exc) {
 							console.log(r)
+							// The server writes the eReceipt status to the DB, so reload to update the pill
+							frm.reload_doc();
 						}
 					},
 
