@@ -98,6 +98,8 @@ frappe.ui.form.on('Sales Invoice', {
 									docname: frm.doc.name,
 									submission_reason: values.submission_reason
 								},
+								freeze: true,
+								freeze_message: __("Submitting to ETA..."),
 								callback: function(r) {
 									// submit_eta_invoice returns nothing, so check for errors and not r.message
 									if (!r.exc) {
@@ -115,6 +117,8 @@ frappe.ui.form.on('Sales Invoice', {
 						frappe.call({
 							method: 'erpnext_egypt_compliance.erpnext_eta.main.submit_eta_invoice',
 							args: {	docname: frm.doc.name },
+							freeze: true,
+							freeze_message: __("Submitting to ETA..."),
 							callback: function(r) {
 								// submit_eta_invoice returns nothing, so check for errors and not r.message
 								if (!r.exc) {
