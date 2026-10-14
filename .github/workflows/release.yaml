@@ -1,10 +1,17 @@
 name: Generate Semantic Release
 on:
+  push:
+    branches: [main, version-16]
   workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
 
 jobs:
   release:
     name: Release
+    # Skip the push made by semantic-release itself
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release):') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -29,5 +36,6 @@ jobs:
 
       - name: Create Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Bot token so the release commit can be pushed to a protected branch
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BOT_TOKEN || secrets.GITHUB_TOKEN }}
         run: npx semantic-release
