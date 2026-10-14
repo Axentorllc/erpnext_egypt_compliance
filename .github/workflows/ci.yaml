@@ -3,14 +3,12 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, version-15-hotfix]
   pull_request:
-    branches:
-      - main
+    branches: [main, version-15-hotfix]
 
 concurrency:
-  group: develop-erpnext_egypt_compliance-${{ github.event.number }}
+  group: ci-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
