@@ -39,7 +39,7 @@ def validate_eta_before_submit(doc, method=None):
         return
 
     # === E-INVOICE PATH (Regular Sales Invoice without POS) ===
-    connector = get_company_eta_connector(company)
+    connector = get_company_eta_connector(company, throw_if_no_connector=False)
 
     if not connector:
         return

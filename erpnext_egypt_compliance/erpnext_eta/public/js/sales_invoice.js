@@ -1,19 +1,21 @@
 frappe.ui.form.on('Sales Invoice', {
 	onload(frm) {
 		frm.trigger('set_query_for_eta_sub_type');
-		let eta_wrapper = $('.title-area').append('<div id="eta-status"></div>')
+	},
+	refresh(frm) {
+		// The form page is shared across invoices, so update the pill for new docs too
+		frm.trigger('eta_add_status_indicator');
 
-		// your code here
+		// Custom buttons are cleared on every refresh, so add them here and not in onload
+		if (frm.is_new()) return;
+
 		frm.trigger('eta_add_download_button');
 		frm.trigger('eta_add_submit_button');
 		frm.trigger('eta_fetch_status_button');
-		frm.trigger('eta_add_status_indicator');
 		frm.trigger('eta_add_download_e_receipt_button')
 		frm.trigger('eta_submit_ereceipt')
 		frm.trigger('eta_add_download_pdf_button');
 		frm.trigger('eta_add_cancel_button');
-	},
-	refresh(frm) {
 	},
 	set_query_for_eta_sub_type(frm) { 
 		frm.set_query("eta_tax_sub_type", "taxes", function (doc, cdt, cdn) {
@@ -96,10 +98,12 @@ frappe.ui.form.on('Sales Invoice', {
 									docname: frm.doc.name,
 									submission_reason: values.submission_reason
 								},
+								freeze: true,
+								freeze_message: __("Submitting to ETA..."),
 								callback: function(r) {
-									if (r.message) {
+									// submit_eta_invoice returns nothing, so check for errors and not r.message
+									if (!r.exc) {
 										console.log(r.message)
-										frappe.show_alert(r.message)
 										frm.trigger('fetch_eta_status')
 									}
 								}
@@ -113,10 +117,12 @@ frappe.ui.form.on('Sales Invoice', {
 						frappe.call({
 							method: 'erpnext_egypt_compliance.erpnext_eta.main.submit_eta_invoice',
 							args: {	docname: frm.doc.name },
+							freeze: true,
+							freeze_message: __("Submitting to ETA..."),
 							callback: function(r) {
-								if (r.message) {
+								// submit_eta_invoice returns nothing, so check for errors and not r.message
+								if (!r.exc) {
 									console.log(r.message)
-									frappe.show_alert(r.message)
 									frm.trigger('fetch_eta_status')
 								}
 							}
@@ -143,7 +149,12 @@ frappe.ui.form.on('Sales Invoice', {
 				eta_status_class = "green"
 			}
 		}
-		 $('#eta-status').html('<span class="eta-pill indicator-pill whitespace-nowrap ' + eta_status_class +' ">' + eta_status_str + '</span>')
+		let $title_area = frm.page.wrapper.find('.title-area');
+		let $eta_status = $title_area.find('.eta-status');
+		if (!$eta_status.length) {
+			$eta_status = $('<div class="eta-status"></div>').appendTo($title_area);
+		}
+		$eta_status.html('<span class="eta-pill indicator-pill whitespace-nowrap ' + eta_status_class +' ">' + eta_status_str + '</span>')
 	},
 	eta_add_download_e_receipt_button(frm) {
 		frm.add_custom_button('Download e-Receipt Json', () => {
@@ -191,6 +202,8 @@ frappe.ui.form.on('Sales Invoice', {
 					callback: function (r) {
 						if (!r.exc) {
 							console.log(r)
+							// The server writes the eReceipt status to the DB, so reload to update the pill
+							frm.reload_doc();
 						}
 					},
 
