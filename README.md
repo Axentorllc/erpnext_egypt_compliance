@@ -105,6 +105,13 @@ For detailed documentation, visit: [EG Compliance Documentation](https://docs.ax
 
 - [ERPNext Egypt Compliance App by Axentor](https://docs.axentor.co/EG%20Compliance/erpnext-egypt-compliance-app-by-axentor)
 
+## 🌿 Supported Versions
+
+| Frappe / ERPNext | Branch | Release tags |
+|---|---|---|
+| v15 | `main` | `v15.x.y` |
+| v16 | `version-16` | `v16.x.y` |
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
