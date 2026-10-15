@@ -1,0 +1,38 @@
+name: Create weekly release pull requests
+
+on:
+  schedule:
+    - cron: "0 7 * * 2" # Tuesday 07:00 UTC = 10:00 Cairo (summer), 09:00 (winter)
+  workflow_dispatch:
+
+jobs:
+  release-pr:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { version: "15", head: version-15-hotfix, base: main }
+          - { version: "16", head: version-16-hotfix, base: version-16 }
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Open release PR if there are feat/fix/perf commits
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_BOT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          commits=$(git log --no-merges --format='- %s (%h)' origin/${{ matrix.base }}..origin/${{ matrix.head }})
+          if ! echo "$commits" | grep -qE '^- (feat|fix|perf)(\(.+\))?!?:'; then
+            echo "v${{ matrix.version }}: no feat/fix/perf since last release, skipping"
+            exit 0
+          fi
+          if [ -n "$(gh pr list --base ${{ matrix.base }} --head ${{ matrix.head }} --state open --json number -q '.[].number')" ]; then
+            echo "v${{ matrix.version }}: release PR already open, skipping"
+            exit 0
+          fi
+          printf 'Automated weekly release.\n\n%s\n' "$commits" > body.md
+          gh pr create --base ${{ matrix.base }} --head ${{ matrix.head }} \
+            --title "chore: release v${{ matrix.version }}" --body-file body.md
