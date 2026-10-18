@@ -8,7 +8,7 @@ ETA e-invoicing and e-receipts for ERPNext
 
 <br><br>
 <a href="https://www.youtube.com/watch?v=0CcJNd8YT1w">
-  <img src="https://img.youtube.com/vi/0CcJNd8YT1w/maxresdefault.jpg" alt="Watch the Egypt Compliance demo" width="720"/>
+  <img src=".github/demo-thumbnail.webp" alt="Watch the Egypt Compliance demo" width="720"/>
 </a>
 
 </div>
