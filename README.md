@@ -6,11 +6,6 @@ ETA e-invoicing and e-receipts for ERPNext
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](license.txt)
 
-<br><br>
-<a href="https://www.youtube.com/watch?v=0CcJNd8YT1w">
-  <img src=".github/demo-thumbnail.webp" alt="Watch the Egypt Compliance demo" width="720"/>
-</a>
-
 </div>
 
 <div align="center">
