@@ -38,7 +38,7 @@ class TestUOMMapping(IntegrationTestCase):
 		self.assertFalse(make_uom("_Test ETA UOM Custom").eta_uom)
 
 	@patch.dict(DEFAULT_ETA_UOM, TEST_MAP)
-	def test_migrate_fills_only_blank_uoms(self):
+	def test_backfill_fills_only_blank_uoms(self):
 		blank = make_uom("_Test ETA UOM Blank")
 		frappe.db.set_value("UOM", blank.name, "eta_uom", None)  # as if created before the app was installed
 		preset = make_uom("_Test ETA UOM Preset", "GRM")
@@ -48,7 +48,7 @@ class TestUOMMapping(IntegrationTestCase):
 		self.assertEqual(frappe.db.get_value("UOM", blank.name, "eta_uom"), "KGM")
 		self.assertEqual(frappe.db.get_value("UOM", preset.name, "eta_uom"), "GRM")
 
-	def test_migrate_skips_site_without_uom_table(self):
+	def test_backfill_skips_site_without_uom_table(self):
 		with (
 			patch.object(frappe.local.db, "table_exists", return_value=False),
 			patch.object(frappe, "get_all") as get_all,
