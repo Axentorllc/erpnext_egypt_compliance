@@ -26,11 +26,9 @@ doc_events = {
     },
 }
 
-after_migrate = [
-    "erpnext_egypt_compliance.migrate.after_migrate",
-    "erpnext_egypt_compliance.erpnext_eta.uom_mapping.apply_default_eta_uom",
-]
-# after_sync, not after_install: fixtures (ETA UOM, UOM-eta_uom field) sync after after_install
+after_migrate = "erpnext_egypt_compliance.migrate.after_migrate"
+# after_sync, not after_install: fixtures (ETA UOM, UOM-eta_uom field) sync after after_install.
+# Existing sites get the same one-time fill from patches/set_default_eta_uom.py.
 after_sync = "erpnext_egypt_compliance.erpnext_eta.uom_mapping.apply_default_eta_uom"
 after_uninstall = "erpnext_egypt_compliance.uninstall.after_uninstall"
 
