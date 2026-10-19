@@ -40,3 +40,12 @@ def test_before_insert_skips_missing_eta_code(monkeypatch):
 	doc = frappe._dict(uom_name="Kg", eta_uom=None)
 	uom_mapping.set_default_eta_uom(doc)
 	assert doc.eta_uom is None
+
+
+def test_apply_skips_site_without_uom_table(monkeypatch):
+	def fail(*args, **kwargs):
+		raise AssertionError("must not query UOM when the table is missing")
+
+	monkeypatch.setattr(frappe, "db", frappe._dict(table_exists=lambda *a, **k: False, has_column=fail))
+	monkeypatch.setattr(frappe, "get_all", fail)
+	uom_mapping.apply_default_eta_uom()

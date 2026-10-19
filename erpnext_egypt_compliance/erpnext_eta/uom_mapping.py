@@ -70,6 +70,9 @@ def set_default_eta_uom(doc, method=None):
 def apply_default_eta_uom():
 	"""after_sync / after_migrate: fill blank ETA UOM on existing standard UOMs. Never overwrites."""
 	# ponytail: refills a mapping someone cleared on purpose on the next migrate; add an opt-out if anyone needs that
+	# skip on sites without ERPNext's UOM table or before the eta_uom custom field is synced
+	if not (frappe.db.table_exists("UOM", cached=False) and frappe.db.has_column("UOM", "eta_uom")):
+		return
 	codes = set(frappe.get_all("ETA UOM", pluck="name"))
 	blank = frappe.get_all(
 		"UOM",
