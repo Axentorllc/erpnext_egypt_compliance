@@ -48,11 +48,12 @@ class TestUOMMapping(IntegrationTestCase):
 		self.assertEqual(frappe.db.get_value("UOM", blank.name, "eta_uom"), "KGM")
 		self.assertEqual(frappe.db.get_value("UOM", preset.name, "eta_uom"), "GRM")
 
+	@patch.dict(DEFAULT_ETA_UOM, TEST_MAP)
 	def test_backfill_skips_site_without_uom_table(self):
-		with (
-			patch.object(frappe.local.db, "table_exists", return_value=False),
-			patch.object(frappe, "get_all") as get_all,
-		):
+		uom = make_uom("_Test ETA UOM Blank")
+		frappe.db.set_value("UOM", uom.name, "eta_uom", None)
+
+		with patch.object(frappe.local.db, "table_exists", return_value=False):
 			apply_default_eta_uom()
 
-		get_all.assert_not_called()
+		self.assertFalse(frappe.db.get_value("UOM", uom.name, "eta_uom"))
