@@ -5,7 +5,7 @@ import json
 from unittest.mock import patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from erpnext_egypt_compliance.erpnext_eta.uom_mapping import (
 	DEFAULT_ETA_UOM,
@@ -20,7 +20,7 @@ def make_uom(uom_name, eta_uom=None):
 	return frappe.get_doc({"doctype": "UOM", "uom_name": uom_name, "eta_uom": eta_uom}).insert()
 
 
-class TestUOMMapping(IntegrationTestCase):
+class TestUOMMapping(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
