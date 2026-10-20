@@ -30,6 +30,8 @@ after_migrate = "erpnext_egypt_compliance.migrate.after_migrate"
 # after_sync, not after_install: fixtures (ETA UOM, UOM-eta_uom field) sync after after_install.
 # Existing sites get the same one-time fill from patches/set_default_eta_uom.py.
 after_sync = "erpnext_egypt_compliance.erpnext_eta.uom_mapping.apply_default_eta_uom"
+# v15 setup wizard inserts UOMs without running before_insert, so fill them once it finishes
+setup_wizard_success = "erpnext_egypt_compliance.erpnext_eta.uom_mapping.fill_after_setup_wizard"
 after_uninstall = "erpnext_egypt_compliance.uninstall.after_uninstall"
 
 # User Data Protection

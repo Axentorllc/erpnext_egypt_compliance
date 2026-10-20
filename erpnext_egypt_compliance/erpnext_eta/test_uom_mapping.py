@@ -10,6 +10,7 @@ from frappe.tests.utils import FrappeTestCase
 from erpnext_egypt_compliance.erpnext_eta.uom_mapping import (
 	DEFAULT_ETA_UOM,
 	apply_default_eta_uom,
+	fill_after_setup_wizard,
 )
 
 # test-only UOM names mapped to an ETA code, so the tests never touch real UOMs
@@ -57,3 +58,17 @@ class TestUOMMapping(FrappeTestCase):
 			apply_default_eta_uom()
 
 		self.assertFalse(frappe.db.get_value("UOM", uom.name, "eta_uom"))
+
+	@patch.dict(DEFAULT_ETA_UOM, TEST_MAP)
+	def test_setup_wizard_fill_matches_translated_names(self):
+		# like the v15 wizard: name in the site language, db_insert so no before_insert hook
+		name = "_Test ETA UOM Translated"
+		frappe.get_doc({"doctype": "UOM", "uom_name": name, "name": name}).db_insert()
+
+		with patch(
+			"erpnext_egypt_compliance.erpnext_eta.uom_mapping._",
+			lambda msg, lang=None: name if msg == "_Test ETA UOM Blank" else msg,
+		):
+			fill_after_setup_wizard({})
+
+		self.assertEqual(frappe.db.get_value("UOM", name, "eta_uom"), "KGM")

@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 # Standard ERPNext UOM name -> ETA unit type code. UOMs not listed here are mapped by hand.
 DEFAULT_ETA_UOM = {
@@ -68,17 +69,25 @@ def set_default_eta_uom(doc, method=None):
 
 
 def apply_default_eta_uom():
-	"""Runs once (after_sync on install, patch on existing sites): fill blank ETA UOM on standard UOMs. Never overwrites."""
+	"""Runs once (after_sync on install, patch on existing sites, after the setup wizard): fill blank ETA UOM on standard UOMs. Never overwrites."""
 	# skip on sites without ERPNext's UOM table or before the eta_uom custom field is synced
 	if not (frappe.db.table_exists("UOM", cached=False) and frappe.db.has_column("UOM", "eta_uom")):
 		return
+	# the v15 setup wizard names UOMs in the site language (Arabic: Unit -> وحدة)
+	lang = frappe.db.get_default("lang") or "en"
+	uom_map = {**DEFAULT_ETA_UOM, **{_(uom, lang=lang): code for uom, code in DEFAULT_ETA_UOM.items()}}
 	codes = set(frappe.get_all("ETA UOM", pluck="name"))
 	blank = frappe.get_all(
 		"UOM",
-		filters={"name": ["in", list(DEFAULT_ETA_UOM)], "eta_uom": ["is", "not set"]},
+		filters={"name": ["in", list(uom_map)], "eta_uom": ["is", "not set"]},
 		pluck="name",
 	)
 	for uom in blank:
-		code = DEFAULT_ETA_UOM.get(uom)
+		code = uom_map.get(uom)
 		if code in codes:
 			frappe.db.set_value("UOM", uom, "eta_uom", code, update_modified=False)
+
+
+def fill_after_setup_wizard(args=None):
+	"""setup_wizard_success: the v15 wizard creates UOMs with db_insert, which skips before_insert."""
+	apply_default_eta_uom()
