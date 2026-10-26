@@ -1,0 +1,4 @@
+[pre_model_sync]
+
+[post_model_sync]
+erpnext_egypt_compliance.patches.set_default_eta_uom

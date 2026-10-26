@@ -1,122 +1,116 @@
-# ERPNext Egypt Compliance (ETA Integration)
+<div align="center">
+<img src=".github/eg-compliance-logo.png" alt="Egypt Compliance Logo" height="80px"/>
+<h1>Egypt Compliance</h1>
 
-[![License: GPLv3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+ETA e-invoicing and e-receipts for ERPNext
 
-A comprehensive integration module for ERPNext that streamlines and automates Egyptian tax compliance processes by connecting directly with the Egyptian Tax Authority's (ETA) systems.
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](license.txt)
 
-## 🧩 About the Integration
+<br><br>
+<a href="https://www.youtube.com/watch?v=0CcJNd8YT1w">
+  <img src=".github/demo-thumbnail.webp" alt="Watch the Egypt Compliance demo" width="720"/>
+</a>
 
-The **EG Compliance** integration with **ERPNext** ensures businesses in Egypt can meet tax obligations accurately and on time—minimizing errors, reducing preparation time, and automating the submission of key documents like VAT returns and electronic invoices.
+</div>
 
-This integration equips ERPNext users with the necessary tools to comply with Egyptian tax laws efficiently by embedding real-time compliance within ERPNext, simplifying the tax process from start to finish.
+<div align="center">
 
-## 🔑 Key Features
+[Marketplace](https://cloud.frappe.io/marketplace/apps/erpnext_egypt_compliance)
+  &nbsp;|&nbsp;
+[Docs](https://axe-docs.frappe.cloud/EG%20Compliance/Introduction)
+  &nbsp;|&nbsp;
+[Demo](https://www.youtube.com/watch?v=0CcJNd8YT1w)
 
-- **VAT Calculation and Returns** - Automated VAT calculation and return filing
-- **Electronic Invoicing** - Generate and submit e-invoices to ETA
-- **Tax Return Filing** - Streamlined tax return submission process
-- **Tax Document Management** - Centralized management of all tax-related documents
-- **Real-time ETA Integration** - Direct connection with Egyptian Tax Authority systems
-- **Dashboard & Reporting** - Comprehensive status reports and monitoring
-- **Invoice Signing** - Digital signature integration for compliance
-- **E-Invoice Download** - Easy access to official e-invoice documents
+</div>
 
-## 🚀 Installation
+## Introduction
 
-### Prerequisites
+Egypt Compliance makes Egyptian Tax Authority (ETA) compliance simple from inside ERPNext. Sales Invoices and POS Invoices are validated, signed and sent to ETA, and their ETA status comes back to ERPNext automatically.
 
-- ERPNext installation (version 14 or higher recommended)
-- ETA Portal registration
-- Valid Egyptian Tax Authority credentials
-- Python 3.8+ (if installing from source)
-- Git (if installing from source)
-- To Download the Latest Compatible E-Invoice Signer Use This link: https://github.com/Axentorllc/erpnext_egypt_compliance/releases/download/v1.5/ERPNext.ETA.Signer.-.By.Axentor.-.v1.5.zip
+It builds on top of [ERPNext](https://github.com/frappe/erpnext) and the [Frappe Framework](https://github.com/frappe/frappe).
+
+## Key Features
+
+### E-Invoicing
+
+Validate, sign and submit Sales Invoices to ETA, one at a time or in hourly batches. Then track their status, cancel them and download the official ETA PDF.
+
+### E-Receipts
+
+Send POS Invoices to the ETA e-receipt system, with one connector per POS Profile.
+
+### Other Features
+
+- **ERPNext ETA Signer**
+  Sign invoices on Windows with your ETA signing certificate ([download](https://github.com/Axentorllc/erpnext_egypt_compliance/releases/download/v1.5/ERPNext.ETA.Signer.-.By.Axentor.-.v1.5.zip))
+
+- **ETA Master Data**
+  Tax types, units and activity codes included; item codes can be inherited from Item Group or Brand
+
+- **Monitoring**
+  EG Compliance dashboard, status report and a log of every submission
+
+<details>
+<summary>Screenshots</summary>
+
+**EG Compliance Workspace**
+<img src=".github/screenshots/workspace.webp" alt="EG Compliance Workspace"/>
+
+**ETA Connector**
+<img src=".github/screenshots/eta-connector.webp" alt="ETA Connector"/>
+
+**ETA Log**
+<img src=".github/screenshots/eta-log.webp" alt="ETA Log"/>
+
+**ETA Sales Invoices Status Report**
+<img src=".github/screenshots/status-report.webp" alt="ETA Sales Invoices Status Report"/>
+
+**ETA Settings**
+<img src=".github/screenshots/eta-settings.webp" alt="ETA Settings"/>
+
+**ETA Activity Codes**
+<img src=".github/screenshots/activity-codes.webp" alt="ETA Activity Codes"/>
+
+</details>
+
+## Quick Start
+
 ### Installation
 
+Install from the [Frappe Cloud Marketplace](https://cloud.frappe.io/marketplace/apps/erpnext_egypt_compliance), or with bench. Use branch `main` for ERPNext v15 and `version-16` for v16:
+
 ```bash
-# Navigate to your Frappe bench directory
-cd /path/to/your/frappe-bench
-
-# Install the app using bench
-bench get-app erpnext_egypt_compliance https://github.com/Axentorllc/erpnext_egypt_compliance.git
-
-# Install the app on your site
-bench --site your-site.com install-app erpnext_egypt_compliance
-
-# Build assets
-bench build
-
-# Restart the bench
-bench restart
+bench get-app https://github.com/Axentorllc/erpnext_egypt_compliance --branch main
+bench --site your-site install-app erpnext_egypt_compliance
 ```
 
-### Post-Installation Setup
+For setup, please [refer to the documentation](https://axe-docs.frappe.cloud/EG%20Compliance/Introduction).
 
-After installation, you need to configure the integration:
+### ETA Access
 
-1. **Register ERPNext on ETA Portal**
-2. **Configure the ETA Connector in ERPNext**
-3. **Company Setup**
-4. **Connect Customers, Items, and UOM to ETA Portal**
-5. **Sales Taxes and Charges Template Setup**
-6. **Create User in ERPNext**
-7. **Install ETA Application Windows**
+You need your company registered on the ETA portal, with a client ID and secret for ERPNext, and an ETA signing certificate for the signer.
 
-### Verification
+## Supported Versions
 
-To verify the installation:
+| Frappe / ERPNext | Branch | Release tags |
+|---|---|---|
+| v15 | `main` | `v15.x.y` |
+| v16 | `version-16` | `v16.x.y` |
 
-1. Check if the app appears in your ERPNext Apps list
-2. Verify that ETA-related menus and options are available
-3. Test the connection to ETA portal
-4. Create a test invoice to ensure functionality
+## Contributing
 
-## ▶️ Usage
+- [Issue Guidelines](https://github.com/frappe/erpnext/wiki/Issue-Guidelines)
+- [Pull Request Requirements](https://github.com/frappe/erpnext/wiki/Contribution-Guidelines)
 
-### Creating and Submitting E-Invoices
+## License
 
-1. **Create a Sales Invoice in ERPNext**
-2. **Sign the Sales Invoice Using the ETA Windows App**
-3. **Submit the Invoice to ETA**
+This project is licensed under [GNU General Public License (v3)](license.txt)
 
-### Managing E-Invoices
-
-- **Download E-Invoice** - Retrieve official e-invoice documents
-- **Cancel E-Invoice** - Cancel submitted invoices when necessary
-
-### Monitoring and Reporting
-
-- **ETA Sales Invoices Status Report** - Track invoice submission status
-- **Dashboard ETA** - Real-time monitoring of compliance activities
-
-## 🌟 Benefits
-
-- **Automated Compliance** - Reduces manual errors and ensures timely submissions
-- **Time Savings** - Streamlines tax processes and reduces preparation time
-- **Real-time Integration** - Direct connection with ETA systems for immediate feedback
-- **Comprehensive Reporting** - Detailed dashboards and status tracking
-- **Regulatory Compliance** - Ensures adherence to Egyptian tax laws and regulations
-
-## 📚 Documentation
-
-For detailed documentation, visit: [EG Compliance Documentation](https://docs.axentor.co/EG%20Compliance/Introduction)
-
-## 📹 Videos
-
-- [ERPNext Egypt Compliance App by Axentor](https://docs.axentor.co/EG%20Compliance/erpnext-egypt-compliance-app-by-axentor)
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is licensed under the **GPLv3** License - see the [LICENSE](LICENSE) file for details.
-
-## 📞 Support
-
-For support and questions, please refer to the official documentation or contact the development team.
-
----
-
-**Note**: This integration is specifically designed for businesses operating in Egypt and requires proper ETA registration and credentials.
+<br />
+<div align="center">
+  <a href="https://axentor.co" target="_blank">
+    <img src="https://avatars.githubusercontent.com/u/64444715?s=200&v=4" alt="Axentor" height="40"/>
+  </a>
+  <br />
+  Good People, Good Business
+</div>
