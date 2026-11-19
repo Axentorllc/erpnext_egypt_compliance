@@ -481,24 +481,6 @@ def get_receiver():
             title=_("ETA Validation"),
         )
 
-    eta_receiver = Receiver(
-        type=customer_type,
-        id=customer.get("tax_id"),
-        name=customer.get("customer_name"),
-        address=ReceiverAddress(
-            country="EG",
-            governate="Egypt",
-            regionCity="EG City",
-            street="Street 1",
-            buildingNumber="B0",
-            # postalCode=POS_INVOICE_RAW_DATA.get("postal_code"),
-            # floor=POS_INVOICE_RAW_DATA.get("floor"),
-            # room=POS_INVOICE_RAW_DATA.get("room"),
-            # landmark=POS_INVOICE_RAW_DATA.get("landmark"),
-            # additionalInformation=POS_INVOICE_RAW_DATA.get("additional_information"),
-        )
-    )
-    
     customer_address_name = customer.get("customer_primary_address")
     if customer_type == "F" and not customer_address_name:
         frappe.throw(
@@ -506,14 +488,30 @@ def get_receiver():
             title=_("ETA Validation"),
         )
 
+    # ETA requires every address field to be a non-empty string. Customers without a
+    # primary address - or with an incomplete one - fall back to these placeholders.
+    address = ReceiverAddress(
+        country="EG",
+        governate="Egypt",
+        regionCity="EG City",
+        street="Street 1",
+        buildingNumber="B0",
+        # postalCode=POS_INVOICE_RAW_DATA.get("postal_code"),
+        # floor=POS_INVOICE_RAW_DATA.get("floor"),
+        # room=POS_INVOICE_RAW_DATA.get("room"),
+        # landmark=POS_INVOICE_RAW_DATA.get("landmark"),
+        # additionalInformation=POS_INVOICE_RAW_DATA.get("additional_information"),
+    )
+
     if customer_address_name:
         customer_address = frappe.get_doc("Address", customer_address_name)
+        country_code = frappe.db.get_value("Country", customer_address.country, "code") if customer_address.country else None
         address = ReceiverAddress(
-            country=frappe.db.get_value("Country", customer_address.country, "code"),
-            governate=customer_address.state,
-            regionCity=customer_address.city,
-            street=customer_address.address_line1,
-            buildingNumber=customer_address.building_number or "B0"
+            country=(country_code or address.country).upper(),
+            governate=customer_address.state or customer_address.city or address.governate,
+            regionCity=customer_address.city or customer_address.state or address.regionCity,
+            street=customer_address.address_line1 or customer_address.address_line2 or address.street,
+            buildingNumber=customer_address.get("building_number") or address.buildingNumber,
             # postalCode=customer_address.pincode or None,
             # floor=customer_address.floor or None,
             # room=customer_address.room or None,
