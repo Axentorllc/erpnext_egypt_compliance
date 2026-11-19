@@ -62,18 +62,19 @@ def get_item_tax_rate(invoice_data, item_row, tax_row, item_code=None, tax=None)
 
 
 # --- eta_helper.py ---
-def get_company_eta_connector(company, throw_if_no_connector=True):
+def get_company_eta_connector(company, throw_if_no_connector=True, ignore_permissions=False):
 	connector = frappe.get_list(
 		"ETA Connector",
 		filters={"company": company, "is_default": 1},
 		fields=["name"],
 		limit=1,
+		ignore_permissions=ignore_permissions,
 	)
 	if connector:
 		return frappe.get_doc("ETA Connector", connector[0].name)
 	elif throw_if_no_connector:
 		frappe.throw("No Default Connector Set.")
-	connectors = frappe.get_list("ETA Connector", filters={"company": company, "is_default": 1})
+	connectors = frappe.get_list("ETA Connector", filters={"company": company, "is_default": 1}, ignore_permissions=ignore_permissions)
 	if connectors:
 		connector = frappe.get_doc("ETA Connector", connectors[0]["name"])
 		return connector
