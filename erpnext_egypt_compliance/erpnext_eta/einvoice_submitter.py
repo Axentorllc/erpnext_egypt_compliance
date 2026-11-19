@@ -21,7 +21,7 @@ class EInvoiceSubmitter:
 
         except Exception as e:
             self._handle_exception(e)
-            frappe.msgprint(alert=True, message="An error occurred while submitting the e-invoice.", indicator="red")
+            frappe.msgprint("An error occurred while submitting the e-invoice.", alert=True, indicator="red")
             return {"error": str(e)}
     
     def _prepare_data(self, einvoices):
